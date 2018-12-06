@@ -12,7 +12,7 @@ subscription_path = subscriber.subscription_path(project_id, subscription_name)
 def callback(message):
 	#print('\n Received message: {}'.format(message.data))
 	if message.attributes:
-	   print('Attributes:')
+	   print('\nAttributes:')
 	   for key in message.attributes:
 	       value = message.attributes.get(key)
 	       print('{}: {}'.format(key, value))
@@ -29,12 +29,17 @@ def callback(message):
 	print('PATH: %s' % path)
 	if file:
 		if event == "OBJECT_FINALIZE":
-	 		dir_check = call(["gsutil","-m","rsync","-r","gs://rsync-trigger-test/GSync/"+path,"/rsync-test/"+path])
+	 		dir_check = call(["gsutil","-m","rsync","gs://rsync-trigger-test/GSync/"+path,"/rsync-test/"+path])
 			if dir_check == 1:
-				call(["mkdir","/rsync-test/"+dir])
-				call(["gsutil","-m","rsync","-r","gs://rsync-trigger-test/GSync/"+path,"/rsync-test/"+path])
+				new_dir = "/rsync-test"
+				subfolders = dir.split("/")
+				for folder in subfolders:
+					new_dir = new_dir+"/"+folder
+					call(["mkdir",new_dir])
+				call(["gsutil","-m","rsync","gs://rsync-trigger-test/GSync/"+path,"/rsync-test/"+path])
 		elif event == "OBJECT_DELETE":
 			call(["rm","/rsync-test/"+path+file])
+			call(["rmdir","/rsync-test/"+path])
 	else:
 		if event == "OBJECT_FINALIZE":
 			call(["mkdir","/rsync-test/"+dir])
