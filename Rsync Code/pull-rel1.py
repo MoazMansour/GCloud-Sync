@@ -25,19 +25,19 @@ def callback(message):
 	file = object[fsplit:]
 	path = object[psplit:fsplit]
 	dir = path[:-1]
-	print(dir)
 	if file:
 		if event == "OBJECT_FINALIZE":
 			call(["mkdir","-p","/rsync-test/"+dir])
-	 		call(["gsutil","-m","rsync","gs://rsync-trigger-test/GSync/"+path,"/rsync-test/"+path])
+	 		#call(["gsutil","-m","rsync","gs://rsync-trigger-test/GSync/"+path,"/rsync-test/"+path])
+			call(["gsutil","cp","gs://rsync-trigger-test/GSync/"+path+file,"/rsync-test/"+path+file])
 		elif event == "OBJECT_DELETE":
 			call(["rm","/rsync-test/"+path+file])
-			call(["rm","-R","/rsync-test/"+path])
+			call(["find","/rsync-test/"+path,"-type","d","-empty","-delete"])
 	else:
 		if event == "OBJECT_FINALIZE":
 			call(["mkdir","/rsync-test/"+dir])
 		elif event == "OBJECT_DELETE":
-			call(["rm","-R","/rsync-test/"+dir])
+			call(["find","/rsync-test/"+path,"-type","d","-empty","-delete"])
 	message.ack()
 subscriber.subscribe(subscription_path, callback=callback)
 
