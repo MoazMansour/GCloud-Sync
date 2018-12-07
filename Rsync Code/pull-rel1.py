@@ -32,7 +32,7 @@ def callback(message):
 	path = object[psplit:fsplit]								#Assigning path to a variable
 	dir = path[:-1]												#excluding last "/" from path
 
-### Check the type of change and acting upon it
+### Check the type of change and act upon it
 	if file:													#checks if the action was taken on a file object (which is mostly the case with gcloud)
 		if event == "OBJECT_FINALIZE":							#if file has been created or modified
 			call(["mkdir","-p",l_root+dir])						#assures that the target directory (full path) exists on NAS
