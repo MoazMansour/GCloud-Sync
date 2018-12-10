@@ -1,8 +1,8 @@
 #! /bin/bash
 
 EVENTS="CREATE,DELETE,MOVED_TO,MOVED_FROM"          #specifying kind of events to be monitored
-bucket="gs://rsync-trigger-test/" 						#Bucket path
-g_root="GSync/" 												        #root folder subject to change on the cloud
+bucket="gs://rsync-trigger-test/" 						      #Bucket path
+g_root="GSync/" 												            #root folder subject to change on the cloud
 l_root="/rsync-test/"											          #root folder subject to change on the local server
 
 #############################################
@@ -15,10 +15,13 @@ function run_sync {
 
 # If the object changed was a directory then copy a dummy file into the bucket to create the folder
   if [[ $event == *"ISDIR"* ]]; then                                                          #check directory change
+    printf "FOLDER CONFIRMED\n"
     if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                       #check creating types of changes
-      gsutil cp -P dummy "$bucket$g_root$folder$file/.initate"                                   #creates a dummy file to create a folder on the cloud
+      gsutil cp -P dummy "$bucket$g_root$folder$file/.initate"
+      gsutil cp -P dummy "$l_root$folder$file/.initate"                                   #creates a dummy file to create a folder on the cloud
     else
      if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                    #check deleting types of changes
+      printf "DELETE"
         gsutil rm -r "$bucket$g_root$folder$file"                                             #remove folder recersuively from cloud
      fi
     fi
@@ -56,7 +59,7 @@ do
     run_sync "$path" "$folder" "$event" "$file"                                      #call the sync function
   fi
   else
-    if [[ $event == "DELETE" ]] || [[ $event == "MOVED_FROM" ]]; then                #check if it was a deletion
+    if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                #check if it was a deletion
       run_sync "$path" "$folder" "$event" "$file"                                    #run the sync function
     fi
   fi

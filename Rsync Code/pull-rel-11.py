@@ -22,14 +22,18 @@ def run_sync(path,dir,event,file):
 			call(["mkdir","-p",l_root+dir])						#assures that the target directory (full path) exists on NAS
 			call(["gsutil","cp",bucket+g_root+path+file,l_root+path+file])     #copies the changed/created file to its destination on NAS
 		elif event == "OBJECT_DELETE":							#checks if file has been deleted or renamed
+			print ("FILE DELETE")
 			call(["rm",l_root+path+file])						#removes file from NAS
 			call(["find",l_root+path,"-type","d","-empty","-delete"]) #if emptied removes the target folder and its empty subordinates to comply with gcloud object logic
 ###
 	else:														#if the file is empty it means it was a folder action (usually a new empty folder has been created or deleted)
 		if event == "OBJECT_FINALIZE":							#checks if folder has been created
-			call(["mkdir","-p",l_root+dir])						#creates the new folder and all its parents if needed
+			#call(["mkdir","-p",l_root+dir])						#creates the new folder and all its parents if needed
+			call(["cp","-P","dummy",l_root+dir+"/.initate"])
+			call(["cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":							#checks if folder has been deleted
 			call(["find",l_root+path,"-type","d","-empty","-delete"]) #removes the target folder and its empty subordinates to comply with gcloud object logic
+			print ("FOLDER DELETE")
 #### End of object changes actions
 ################################################
 
@@ -37,10 +41,10 @@ def run_sync(path,dir,event,file):
 def callback(message):
 	#print('\n Received message: {}'.format(message.data))
 	if message.attributes:                                     	#read message attributes
-	   #print('\nAttributes:')
+	   print('\nAttributes:')
 	   for key in message.attributes:
 	       value = message.attributes.get(key)
-	       #print('{}: {}'.format(key, value))
+	       print('{}: {}'.format(key, value))
 	       if(key == "eventType"):  							#store event type
 			   event = value
 	       elif(key == "objectId"): 							#store path and filename
