@@ -38,25 +38,29 @@ function run_sync {
 #The while is to read the output that comes out from the inotifywatch which is monitoring all the above events
 # The line is in this format "PATH CHANGE_TIME EVENT_TYPE FILE/FOLDER(OBJECT)"
 #read lines recersuively into string variable line
+######
 while read -r line
 do
-   printf "CHANGE LOG: $line\n"                                                       #print recevied message on screen
-   path=${line%/*}                                                                    #Parsing the path variable from the change message
-   path="$path/"
-   folder=${path##*"$l_root"}                                                         #Exclduing the root folder "rsync-test" from path for sync purposes
-   rest=${line##*/}                                                                   #reading the rest of the message except the path
-   read hour event file <<<"${rest}"                                                  #reading the change_time event_type and subjected obiect of change
+ printf "CHANGE LOG: $line\n"                                                       #print recevied message on screen
+ path=${line%/*}                                                                    #Parsing the path variable from the change message
+ path="$path/"
+ folder=${path##*"$l_root"}                                                         #Exclduing the root folder "rsync-test" from path for sync purposes
+ rest=${line##*/}                                                                   #reading the rest of the message except the path
+ read hour event file <<<"${rest}"                                                  #reading the change_time event_type and subjected obiect of change
 
-   #####
-   # Check if it was a local or remote change to run sync
-   uname="$(stat --format '%U' "$path$file")"                                         #extract owner of file
-   if [ "${uname}" = "root" ]; then                                                   #if root is owner then change was local
-     run_sync "$path" "$folder" "$event" "$file"                                      #call the sync function
-   else
-     printf "Test Failed\n"                                                           #Do nothing
-   fi
-   #####
-
+ #####
+ # Check if it was a local or remote change to run sync
+ if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                 #check if it was a create to get owner
+  uname="$(stat --format '%U' "$path$file")"                                         #extract owner of file
+  if [ "${uname}" = "root" ]; then                                                   #if root is owner then change was local
+    run_sync "$path" "$folder" "$event" "$file"                                      #call the sync function
+  fi
+  else
+    if [[ $event == "DELETE" ]] || [[ $event == "MOVED_FROM" ]]; then                #check if it was a deletion
+      run_sync "$path" "$folder" "$event" "$file"                                    #run the sync function
+    fi
+  fi
+######
 ## End of while loop and calling the inotify watch to monitor changes on rsync-test root folder
 done < <(inotifywait -e "$EVENTS" -m -r --timefmt '%H:%M' --format '%w %T %e %f' "$l_root")
 #############################################
