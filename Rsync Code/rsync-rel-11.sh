@@ -15,12 +15,12 @@ function run_sync {
 
 # If the object changed was a directory then copy a dummy file into the bucket to create the folder
   if [[ $event == *"ISDIR"* ]]; then                                                          #check directory change
-    if [[ $event == *"CREATE"* ]]; then                       #check creating types of changes
+    if [[ $event == *"CREATE"* ]]; then                                                       #check creating types of changes
       gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"
-      gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                   #creates a dummy file to create a folder on the cloud
+      gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                    #creates a dummy file to create a folder on the cloud
     else
-      if [[ $event == *"MOVED_TO"* ]]; then
-        gsutil -m rsync -r -P "$l_root$folder$file" "$bucket$g_root$folder$file"
+      if [[ $event == *"MOVED_TO"* ]]; then                                                   #check if a folder has been MOVED_TO under the same path
+        gsutil -m rsync -r -P "$l_root$folder$file" "$bucket$g_root$folder$file"              #run rsync for this specific folder as normal notification doesn't capture any file movement
       else
         if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                    #check deleting types of changes
           gsutil -m rm -r "$bucket$g_root$folder$file"                                             #remove folder recersuively from cloud
