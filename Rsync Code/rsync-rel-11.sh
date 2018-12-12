@@ -16,7 +16,6 @@ function run_sync {
 # If the object changed was a directory then copy a dummy file into the bucket to create the folder
   if [[ $event == *"ISDIR"* ]]; then                                                          #check directory change
     if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                       #check creating types of changes
-      printf "$bucket$g_root$folder$file/.initate\n"
       gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"
       gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                   #creates a dummy file to create a folder on the cloud
     else
