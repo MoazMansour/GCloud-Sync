@@ -15,13 +15,17 @@ function run_sync {
 
 # If the object changed was a directory then copy a dummy file into the bucket to create the folder
   if [[ $event == *"ISDIR"* ]]; then                                                          #check directory change
-    if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                       #check creating types of changes
+    if [[ $event == *"CREATE"* ]]; then                       #check creating types of changes
       gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"
       gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                   #creates a dummy file to create a folder on the cloud
     else
-     if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                    #check deleting types of changes
-        gsutil -m rm -r "$bucket$g_root$folder$file"                                             #remove folder recersuively from cloud
-     fi
+      if [[ $event == *"MOVED_TO"* ]]; then
+        gsutil -m rsync -r -P "$l_root$folder$file" "$bucket$g_root$folder$file"
+      else
+        if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                    #check deleting types of changes
+          gsutil -m rm -r "$bucket$g_root$folder$file"                                             #remove folder recersuively from cloud
+        fi
+      fi
     fi
   else
     #If change was not a directory change the below are the checks run per file change
