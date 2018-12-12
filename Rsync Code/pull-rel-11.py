@@ -39,14 +39,16 @@ def run_sync(path,dir,event,file):
 def callback(message):
 	#print('\n Received message: {}'.format(message.data))
 	if message.attributes:                                     	#read message attributes
-	   print('\nAttributes:')
+	   #print('\nAttributes:')
 	   for key in message.attributes:
 	       value = message.attributes.get(key)
-	       print('{}: {}'.format(key, value))
+	       #print('{}: {}'.format(key, value))
 	       if(key == "eventType"):  							#store event type
 			   event = value
+			   print ("Eventttpe: "+event)
 	       elif(key == "objectId"): 							#store path and filename
 			   object = value
+			   print("ObjectID: "+object)
 
 ### Parse filename, path, and directory from the objectID
 	fsplit = object.rfind('/')+1								#finding filename position in objectID
