@@ -15,25 +15,25 @@ function run_sync {
 
 # If the object changed was a directory then copy a dummy file into the bucket to create the folder
   if [[ $event == *"ISDIR"* ]]; then                                                          #check directory change
-    if [[ $event == *"CREATE"* ]]; then                                                       #check creating types of changes
-      gsutil -m cp -P -J dummy "$bucket$g_root$folder$file/.initate"                         #creates a dummy file to create a folder on the cloud
-      cp  -P dummy "$l_root$folder$file/.initate"
+    if [[ $event == *"CREATE"* ]]; then                       #check creating types of changes
+      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"··
+      gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                   #creates a dummy file to create a folder on the cloud
     else
-      if [[ $event == *"MOVED_TO"* ]]; then                                                   #check if a folder has been MOVED_TO under the same path
-        gsutil -m rsync -r -P "$l_root$folder$file" "$bucket$g_root$folder$file"                #run rsync for this specific folder as normal notification doesn't capture any file movement
+      if [[ $event == *"MOVED_TO"* ]]; then
+        gsutil -m rsync -r -P "$l_root$folder$file" "$bucket$g_root$folder$file"
       else
         if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                    #check deleting types of changes
-          gsutil -m rm -r "$bucket$g_root$folder$file"                                              #remove folder recersuively from cloud
+          gsutil -m rm -r "$bucket$g_root$folder$file"                                             #remove folder recersuively from cloud
         fi
       fi
     fi
   else
     #If change was not a directory change the below are the checks run per file change
     if [[ $event == "CREATE" ]] || [[ $event == "MOVED_TO" ]]; then                           #check creation types of changes
-      gsutil -m  cp -P -J "$path$file" "$bucket$g_root$folder$file"
+      gsutil -m cp -P "$path$file" "$bucket$g_root$folder$file"
     else
       if [[ $event == "DELETE" ]] || [[ $event == "MOVED_FROM" ]]; then                       #check deletion types of changes
-        gsutil -m rm "$bucket$g_root$folder$file"                                             #delete only this specific file
+        gsutil -m rm "$bucket$g_root$folder$file"                                                #delete only this specific file
       fi
     fi
   fi
@@ -46,7 +46,7 @@ function run_sync {
 ######
 
 function callback() {
-  line="$1"
+  line="$1"                                                                          #Passing on line info to the callback function
   path=${line%/*}                                                                    #Parsing the path variable from the change message
   path="$path/"
   folder=${path##*"$l_root"}                                                         #Exclduing the root folder "rsync-test" from path for sync purposes
@@ -58,21 +58,21 @@ function callback() {
   if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                 #check if it was a create to get owner
   uname="$(stat --format '%U' "$path$file")"                                         #extract owner of file
   if [ "${uname}" = "root" ]; then                                                   #if root is owner then change was local
-    run_sync "$path" "$folder" "$event" "$file"&                                     #call the sync function
+    run_sync "$path" "$folder" "$event" "$file"                                      #call the sync function
   fi
   else
     if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                #check if it was a deletion
-      run_sync "$path" "$folder" "$event" "$file"&                                      #run the sync function
+      run_sync "$path" "$folder" "$event" "$file"                                    #run the sync function
     fi
   fi
   ######
   ## End of while loop and calling the inotify watch to monitor changes on rsync-test root folder
 }
-
-while read line
+while read -r line
 do
   printf "CHANGE LOG: $line\n"                                                       #print recevied message on screen
-  callback "$line"&
-done < <(inotifywait -e "$EVENTS" -m -r --timefmt '%H:%M' --format '%w %T %e %f' "$l_root")
+  callback "$line"                                                                   #call the callback function
+  wait
+done< <(inotifywait -e "$EVENTS" -m -r --timefmt '%H:%M' --format '%w %T %e %f' "$l_root")
 
 #############################################
