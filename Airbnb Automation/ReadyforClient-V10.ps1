@@ -53,7 +53,7 @@ $stat = ("Reading CSV File", "Copying Exports to Upload Folder", "Comparing CS E
 function show-progress {
     param([int]$n, [single]$i)
     $percentage = ($n+$i)/$stat.count*100
-    Write-Progress -Activity "ABB Client Delivery" -status "$($stat[$n]) $($percentage)%" -PercentComplete $percentage
+    Write-Progress -Activity "Airbnb Client Delivery" -status "$($stat[$n]) $($percentage)%" -PercentComplete $percentage
 }
 
 
@@ -94,19 +94,19 @@ function log-count {
 
 function log-error {
     Set-Content -path $error_log -Value ">>>Delivery Check Errors Log<<< `r`n"
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $error_log -Value "_________________________________"
     Add-Content -path $error_log -Value ">>>Total Number of Errors: $($total_errors)"
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $error_log -Value "_________________________________"
     Add-Content -path $error_log -Value "`r"
     Add-Content -path $error_log -Value ">Missing on Tracker: $($tracker_err)"
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $error_log -Value "_________________________________"
     Add-Content -path $error_log -Value $tracker_err_list
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $error_log -Value "_________________________________"
     Add-Content -path $error_log -Value "`r"
     Add-Content -path $error_log -Value ">Missing Covers: $($cover_err)"
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $error_log -Value "_________________________________"
     Add-Content -path $error_log -Value $cover_err_list
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $error_log -Value "_________________________________"
     Add-Content -path $error_log -Value "`r"
     Add-Content -path $error_log -Value ">>>>End of file"
 }
@@ -116,14 +116,14 @@ function log-error {
 
 function log-delivery {
     Set-Content -path $del_log -Value ">>>Delivered Successfully Log<<< `r`n"
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value ">Total Delivered: $($delivered)"
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value "`r"
     Add-Content -path $del_log -Value ">List of Listings:"
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value $delivered_list
-    Add-Content -path $Index_txt -Value "_________________________________"
+    Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value "`r"
     Add-Content -path $del_log -Value ">>>>End of file :)"
 }
@@ -193,7 +193,8 @@ Foreach ($folder in $folders) {
         $cover_err += 1
         $id = extract-id $folder
         $cover_err_list += $id
-        Get-ChildItem -path "$($upload_path)\$($folder)" -Recurse | Move-Item -Destination "$($missing_covers)\"
+        New-Item -ItemType directory -Path "$($missing_covers)" | Out-Null
+        Move-Item -Path "$($upload_path)\$($folder)" -Destination "$($missing_covers)\$($folder)"
 	}
 }
 ##Final count of ready for delivery and accumulating errors
