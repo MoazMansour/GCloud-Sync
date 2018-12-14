@@ -1,3 +1,23 @@
+###############################################################################
+# NAME:      rsync-rel-11.sh
+# AUTHOR:    Moaz Mansour, Blink
+# E-MAIL:    moaz.mansour@blink.la
+# DATE:      12/12/2018
+# LANG:      Bash Script
+#
+# This script manages monitoring changes on Google Cloud and updating
+# local NAS server accordingly.
+#
+# VERSION HISTORY:
+# 1.0    12/10/2018		  Initial Version
+# 1.1    12/12/2018    	Exlcuded rsync
+###############################################################################
+
+##############################################################
+################## GC-Sync NAS Side Monitor ##################
+##############################################################
+
+
 #! /bin/bash
 
 EVENTS="CREATE,DELETE,MOVED_TO,MOVED_FROM"          #specifying kind of events to be monitored

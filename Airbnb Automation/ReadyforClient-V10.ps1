@@ -1,4 +1,19 @@
-﻿########################################### Client Delivery Script###########################################
+﻿###############################################################################
+# NAME:      ReadyforClient-V10.ps1
+# AUTHOR:    Moaz Mansour, Blink
+# E-MAIL:    moaz.mansour@blink.la
+# DATE:      12/14/2018
+# LANG:      PowerShell
+#
+# This script manages the Airbnb Project Client Delivery.
+#
+# VERSION HISTORY:
+# 1.0    12/14/2018    Initial Version
+###############################################################################
+
+#####################################################
+################## Client Delivery ##################
+#####################################################
 
 ##Directories path parameters
 $csv_path = "C:\Users\Blink Workstation\Downloads\photo_sets.csv"
@@ -131,7 +146,7 @@ $progress += 1
 show-progress $progress $copy_id
 
 ## For loop to read, copy and rename listings from Ready for Client to Upload
-Foreach ($listing in $listings) { 
+Foreach ($listing in $listings) {
     $listing_id = extract-id $listing
     $listings_list += $listing_id
     Copy-Item "$($client_path)\$($listing)\Export" "$($upload_path)\Retouched JPEGs ($($listing_id))" -Recurse
@@ -167,11 +182,11 @@ Foreach ($folder in $folders) {
     ##Check primary and vertical covers
 	$primary_check = Get-ChildItem -File "$($upload_path)\$($folder)\*" -filter "*_primary_0_0*" | Measure-Object | %{$_.Count}        #check for primary cover
 	$vertical_check = Get-ChildItem -File "$($upload_path)\$($folder)\*" -filter "*_vertical_0_0*" | Measure-Object | %{$_.Count}      #check for vertical cover
-      
+
     If (($primary_check -eq 1) -and ($vertical_check -eq 1)) {
     ##Passed check add it to delivery list
         $id = extract-id $folder
-        $delivered_list += $id        
+        $delivered_list += $id
         $listing_count.Add( $id, $assets_count)
     } Else {
     ##Failed check move it to the error folder to exclude from auto delivery
