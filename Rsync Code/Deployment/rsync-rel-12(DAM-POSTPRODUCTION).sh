@@ -26,7 +26,7 @@ bucket="gs://dam-staging/" 						      #Bucket path
 g_root="Post-Production/" 												            #root folder subject to change on the cloud
 l_root="/dam-postproduction/"											          #root folder subject to change on the local server
 proc=0                                              #counter to control number of running procceses
-max_proc=7                                         #set max number of allowed proccesses at once
+max_proc=10                                         #set max number of allowed proccesses at once
 
 #############################################
 #Queue function

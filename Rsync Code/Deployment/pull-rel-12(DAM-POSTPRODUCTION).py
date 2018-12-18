@@ -92,7 +92,7 @@ def callback(message):
 ####################################################
 
 ### Calls the function whenever a message is received and limits the subscriber messages to a max
-flow_control = pubsub_v1.types.FlowControl(max_messages=5)
+flow_control = pubsub_v1.types.FlowControl(max_messages=10)
 subscriber.subscribe(subscription_path, callback=callback, flow_control=flow_control)
 
 # The subscriber is non-blocking, so we must keep the main thread from
