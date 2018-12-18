@@ -28,7 +28,7 @@ project_id = "production-backup-194719" 						#The project I am assigned to on G
 subscription_name = "DeliverSub" 									#Pull subscription channel created to pull all object changes messages
 bucket = "gs://dam-staging/" 							#Bucket path
 g_root = "Deliverables/" 												#root folder subject to change on the cloud
-l_root = "/dam-deliverables/"											#root folder subject to change on the local server
+l_root = "/dam-deliverable/"											#root folder subject to change on the local server
 
 subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_name)

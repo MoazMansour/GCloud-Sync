@@ -24,7 +24,7 @@
 EVENTS="CREATE,DELETE,MOVED_TO,MOVED_FROM"          #specifying kind of events to be monitored
 bucket="gs://dam-staging/" 						      #Bucket path
 g_root="Deliverables/" 												            #root folder subject to change on the cloud
-l_root="/dam-deliverables/"											          #root folder subject to change on the local server
+l_root="/dam-deliverable/"											          #root folder subject to change on the local server
 proc=0                                              #counter to control number of running procceses
 max_proc=7                                         #set max number of allowed proccesses at once
 
