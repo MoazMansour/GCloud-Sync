@@ -1,5 +1,5 @@
 ###############################################################################
-# NAME:      pull-rel-11.py
+# NAME:      pull-rel-12.py
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:	 moaz.mansour@blink.la
 # DATE:      12/12/2018
@@ -11,6 +11,7 @@
 # VERSION HISTORY:
 # 1.0    12/05/2018		Initial Version
 # 1.1    12/12/2018    	Exlcuded rsync
+# 1.2	 12/17/2018		Running a flow control function
 ###############################################################################
 
 ##############################################################
