@@ -30,6 +30,7 @@ subscription_name = "PostProductionSub" 										#Pull subscription channel cre
 bucket = "gs://dam-staging/" 											#Bucket path
 g_root = "Post-Production/" 											#root folder subject to change on the cloud
 l_root = "/dam-postproduction/"											#root folder subject to change on the local server
+max_proc = 10															#set max number of messages allowed proccesing at once
 
 subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_name)
@@ -92,7 +93,7 @@ def callback(message):
 ####################################################
 
 ### Calls the function whenever a message is received and limits the subscriber messages to a max
-flow_control = pubsub_v1.types.FlowControl(max_messages=10)
+flow_control = pubsub_v1.types.FlowControl(max_messages= max_proc)
 subscriber.subscribe(subscription_path, callback=callback, flow_control=flow_control)
 
 # The subscriber is non-blocking, so we must keep the main thread from
