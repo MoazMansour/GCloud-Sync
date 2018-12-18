@@ -26,10 +26,10 @@ from google.cloud import pubsub_v1
 
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719" 								#The project I am assigned to on Gcloud
-subscription_name = "PostProudctionSub" 										#Pull subscription channel created to pull all object changes messages
+subscription_name = "PostProductionSub" 										#Pull subscription channel created to pull all object changes messages
 bucket = "gs://dam-staging/" 											#Bucket path
 g_root = "Post-Production/" 											#root folder subject to change on the cloud
-l_root = "/dam-postproudction/"											#root folder subject to change on the local server
+l_root = "/dam-postproduction/"											#root folder subject to change on the local server
 
 subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_name)
