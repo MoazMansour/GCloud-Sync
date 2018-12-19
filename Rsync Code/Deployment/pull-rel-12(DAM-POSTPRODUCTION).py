@@ -1,5 +1,5 @@
 ###############################################################################
-# NAME:      pull-rel-11.py
+# NAME:      pull-rel-12.py
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:	 moaz.mansour@blink.la
 # DATE:      12/12/2018
@@ -11,6 +11,7 @@
 # VERSION HISTORY:
 # 1.0    12/05/2018		Initial Version
 # 1.1    12/12/2018    	Exlcuded rsync
+# 1.2	 12/17/2018		Running a flow control function
 ###############################################################################
 
 ##############################################################
@@ -24,11 +25,12 @@ from subprocess import check_output
 from google.cloud import pubsub_v1
 
 ####### Information to be changed based on the type of service and bucket used ####
-project_id = "production-backup-194719" 						#The project I am assigned to on Gcloud
-subscription_name = "IngestSub" 									#Pull subscription channel created to pull all object changes messages
-bucket = "gs://dam-staging/" 							#Bucket path
-g_root = "Ingest/" 												#root folder subject to change on the cloud
-l_root = "/dam-ingest/"											#root folder subject to change on the local server
+project_id = "production-backup-194719" 								#The project I am assigned to on Gcloud
+subscription_name = "PostProductionSub" 										#Pull subscription channel created to pull all object changes messages
+bucket = "gs://dam-staging/" 											#Bucket path
+g_root = "Post-Production/" 											#root folder subject to change on the cloud
+l_root = "/dam-postproduction/"											#root folder subject to change on the local server
+max_proc = 10															#set max number of messages allowed proccesing at once
 
 subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_name)
@@ -91,7 +93,7 @@ def callback(message):
 ####################################################
 
 ### Calls the function whenever a message is received and limits the subscriber messages to a max
-flow_control = pubsub_v1.types.FlowControl(max_messages=5)
+flow_control = pubsub_v1.types.FlowControl(max_messages= max_proc)
 subscriber.subscribe(subscription_path, callback=callback, flow_control=flow_control)
 
 # The subscriber is non-blocking, so we must keep the main thread from
