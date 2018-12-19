@@ -131,6 +131,7 @@ function log-delivery {
 
 #### Main Body ###
 
+##Update Progress
 show-progress $progress $copy_id
 
 ##Read Set Ids from the CSV file
@@ -142,6 +143,7 @@ Import-Csv $csv_path |`
 ##Get a list of listings in the delivery folder
 $listings = Get-ChildItem -Directory $client_path
 
+##Update Progress
 $progress += 1
 show-progress $progress $copy_id
 
@@ -154,6 +156,7 @@ Foreach ($listing in $listings) {
     show-progress $progress $copy_id
 }
 
+##Update Progress
 $progress += 1
 show-progress $progress $copy_id
 
@@ -169,6 +172,7 @@ Foreach ($id in $listings_list) {
 $delivery_count = Get-ChildItem -Directory "$($upload_path)\" | Measure-Object | %{$_.Count}
 $folders = Get-ChildItem -Directory $upload_path
 
+##Update Progress
 $progress += 1
 show-progress $progress $copy_id
 
@@ -197,6 +201,7 @@ Foreach ($folder in $folders) {
         Move-Item -Path "$($upload_path)\$($folder)" -Destination "$($missing_covers)\$($folder)"
 	}
 }
+
 ##Final count of ready for delivery and accumulating errors
 $delivered = $delivery_count - $cover_err
 $total_errors = $tracker_err + $cover_err
@@ -206,6 +211,7 @@ log-delivery
 log-error
 log-count
 
+##Update Progress
 $progress += 1
 show-progress $progress $copy_id
 
