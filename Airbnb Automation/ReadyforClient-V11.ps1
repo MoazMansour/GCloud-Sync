@@ -227,7 +227,7 @@ Foreach ($listing in $listings){
 }
 
 ##Final count of ready for delivery and accumulating errors
-$delivered = $delivery_count - $cover_err
+$delivered = $delivered_list.Count
 $total_errors = $tracker_err + $cover_err
 
 ##Update Progress
