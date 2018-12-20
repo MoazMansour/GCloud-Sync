@@ -55,7 +55,7 @@ $stat = ("Reading CSV File", "Copying Exports to Upload Folder", "Comparing CS E
 
 function extract-id {
     param( [string]$home_listing)
-    $pattern = '(\d+)'
+    $pattern = '(\d\d\d+)'
     $check = $home_listing -match $pattern
     $listing_id = $matches[0]
     return $listing_id
@@ -66,7 +66,7 @@ function extract-id {
 #### Print out Progress ####
 function show-progress {
     param([int]$n)
-    $percentage = [math]::Truncate($n/$stat.count*100)
+    $percentage = [math]::Truncate(($n+1)/$stat.count*100)
     Write-Progress -Id 1 -Activity "Airbnb Client Delivery" -status "$($stat[$n]) $($percentage)%" -PercentComplete $percentage
     if (-Not ($n -eq 0)) {
         Write-Host "[Done] : $($stat[($n-1)])"
@@ -82,13 +82,13 @@ function copy-progress {
     $to_count = Get-ChildItem -Path "$($to)" -Recurse| Measure-Object | %{$_.Count}
     $id = extract-id $from
     if ( $call -eq "copy") {
-        $report = "Retouched JPEGs ($($id))"    
+        $report = "Copying Listing ($($id))"
     } Else {
-        $report = "Home Listing ($($id))"
+        $report = "Moving Listing ($($id))"
     }
     While ($to_count -le $from_count) {
         $percentage = [math]::Truncate($to_count/$from_count*100)
-        Write-Progress -Id 2 -ParentId 1 -Activity "Copying $($report)" -status "$($percentage)%" -PercentComplete $percentage
+        Write-Progress -Id 2 -ParentId 1 -Activity "$($report)" -status "$($percentage)%" -PercentComplete $percentage
         $to_count = Get-ChildItem -Path "$($to)" -Recurse| Measure-Object | %{$_.Count}
         $to_count += 1
     }
@@ -125,7 +125,7 @@ function listings-archive {
             $dest = "$($archive_path)\$($archive_name)\"
             Start-Job -Name "Moving Items" -ScriptBlock {
                 param($source, $dest)
-                Move-Item -Path $source -Destination $dest -Force 
+                Move-Item -Path $source -Destination $dest -Force
             } -ArgumentList $source, $dest | Out-Null
             copy-progress $source $dest "move"
         }
@@ -197,6 +197,7 @@ function log-delivery {
 
 ##Stage 1: Reading CSV -> Update Progress
 show-progress $progress
+"`r `n `r `n `r `n `r `n `r `n `r `n `n `n `n `n `n"
 
 ##Read Set Ids from the CSV file
 Import-Csv $csv_path |`
@@ -254,9 +255,21 @@ Foreach ($folder in $folders) {
             $id = extract-id $folder
             $cover_err_list += $id
             if (-Not (Test-Path $missing_covers -PathType Container)) {
-                New-Item -ItemType directory -Path "$($missing_covers)" | Out-Null   
+                New-Item -ItemType directory -Path "$($missing_covers)" | Out-Null
             }
-            Move-Item -Path "$($upload_path)\$($folder)" -Destination "$($missing_covers)\$($folder)" -Force
+            $source = "$($upload_path)\$($folder)"
+            $dest = "$($missing_covers)\$($folder)"
+            Start-Job -Name "Missing Move" -ScriptBlock {
+                param($source, $dest, $missing_covers)
+                if (-Not (Test-Path $dest -PathType Container)) {
+                    Move-Item -Path $source -Destination "$($missing_covers)\" -Force
+                } Else {
+                    Copy-Item "$($source)\*" "$($dest)\" -Recurse -Force
+                    Remove-Item -Path $source -Recurse -Force
+                }
+
+            } -ArgumentList $source, $dest, $missing_covers | Out-Null
+            copy-progress $source $dest "move"
 	    }
     }
 }
