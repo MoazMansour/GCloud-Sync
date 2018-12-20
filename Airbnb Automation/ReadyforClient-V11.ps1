@@ -44,19 +44,10 @@ $tracker_err = 0
 $cover_err = 0
 $delivered = 0
 $progress = 0
-$copy_id = 0
 ##############################
 
 #Status Bar
-$stat = ("Reading CSV File", "Copying Exports to Upload Folder", "Comparing CS Export to Ready for Client", "Checking Missing Covers", "Archiving Delivered", "Writing to log files", "Done")
-################################################################################################
-
-#### Print out Progress ####
-function show-progress {
-    param([int]$n, [single]$i)
-    $percentage = [math]::Truncate(($n+$i)/$stat.count*100)
-    Write-Progress -Activity "Airbnb Client Delivery" -status "$($stat[$n]) $($percentage)%" -PercentComplete $percentage
-}
+$stat = ("Reading CSV File", "Copying Exports to Upload Folder", "Comparing CS Export to Ready for Client", "Checking Missing Covers", "Writing to log files", "Archiving Delivered", "Done")
 
 ################################################################################################
 
@@ -69,6 +60,78 @@ function extract-id {
     $listing_id = $matches[0]
     return $listing_id
 }
+
+################################################################################################
+
+#### Print out Progress ####
+function show-progress {
+    param([int]$n)
+    $percentage = [math]::Truncate($n/$stat.count*100)
+    Write-Progress -Id 1 -Activity "Airbnb Client Delivery" -status "$($stat[$n]) $($percentage)%" -PercentComplete $percentage
+    if (-Not ($n -eq 0)) {
+        Write-Host "[Done] : $($stat[($n-1)])"
+    }
+}
+
+################################################################################################
+
+#### Copying Progress ####
+function copy-progress {
+    param([string]$from, [string]$to, [string]$call)
+    $from_count = Get-ChildItem -Path "$($from)" -Recurse| Measure-Object | %{$_.Count}
+    $to_count = Get-ChildItem -Path "$($to)" -Recurse| Measure-Object | %{$_.Count}
+    $id = extract-id $from
+    if ( $call -eq "copy") {
+        $report = "Retouched JPEGs ($($id))"    
+    } Else {
+        $report = "Home Listing ($($id))"
+    }
+    While ($to_count -le $from_count) {
+        $percentage = [math]::Truncate($to_count/$from_count*100)
+        Write-Progress -Id 2 -ParentId 1 -Activity "Copying $($report)" -status "$($percentage)%" -PercentComplete $percentage
+        $to_count = Get-ChildItem -Path "$($to)" -Recurse| Measure-Object | %{$_.Count}
+        $to_count += 1
+    }
+}
+
+################################################################################################
+
+#### Copy and rename listings from Ready for Client to Upload  ####
+function listings-copy {
+    Foreach ($listing in $listings) {
+        $listing_id = extract-id $listing
+        $listings_list += $listing_id
+        $source = "$($client_path)\$($listing)\Export\*"
+        $dest = "$($upload_path)\Retouched JPEGs ($($listing_id))\"
+        if (-Not (Test-Path $dest -PathType Container)) {
+            New-Item -ItemType directory -Path $dest | Out-Null
+        }
+        Start-Job -Name "Listing Copying" -ScriptBlock {
+            param($source, $dest)
+            Copy-Item $source $dest -Recurse -Force
+        } -ArgumentList $source, $dest | Out-Null
+        copy-progress $source $dest "copy"
+    }
+}
+
+################################################################################################
+
+#### Copy and rename listings from Ready for Client to Upload  ####
+function listings-archive {
+    Foreach ($listing in $listings){
+        $id = extract-id $listing
+        if ($delivered_list -like $id) {
+            $source = "$($client_path)\$($listing)"
+            $dest = "$($archive_path)\$($archive_name)\"
+            Start-Job -Name "Moving Items" -ScriptBlock {
+                param($source, $dest)
+                Move-Item -Path $source -Destination $dest -Force 
+            } -ArgumentList $source, $dest | Out-Null
+            copy-progress $source $dest "move"
+        }
+    }
+}
+
 ################################################################################################
 
 #### Cheat Sheet File ####
@@ -132,8 +195,8 @@ function log-delivery {
 
 #### Main Body ###
 
-##Update Progress
-show-progress $progress $copy_id
+##Stage 1: Reading CSV -> Update Progress
+show-progress $progress
 
 ##Read Set Ids from the CSV file
 Import-Csv $csv_path |`
@@ -141,25 +204,17 @@ Import-Csv $csv_path |`
         $SetID += $_."Photo set ID"
     }
 
-##Get a list of listings in the delivery folder
+##Stage 2: Copying -> Update Progress
+$progress += 1
+show-progress $progress
+
+##Ready, Copy and rename listings from Ready for Client to Upload
 $listings = Get-ChildItem -Directory $client_path
+listings-copy
 
-##Update Progress
+##Stage 3: Comparing CS Export to Ready for Client -> Update Progress
 $progress += 1
-show-progress $progress $copy_id
-
-## For loop to read, copy and rename listings from Ready for Client to Upload
-Foreach ($listing in $listings) {
-    $listing_id = extract-id $listing
-    $listings_list += $listing_id
-    Copy-Item "$($client_path)\$($listing)\Export" "$($upload_path)\Retouched JPEGs ($($listing_id))" -Recurse -Force
-    $copy_id += (1/$listings.Count)
-    show-progress $progress $copy_id
-}
-
-##Update Progress
-$progress += 1
-show-progress $progress $copy_id
+show-progress $progress
 
 ##Check that all folder ids exist in the SetIds exported from CS
 Foreach ($id in $listings_list) {
@@ -173,9 +228,9 @@ Foreach ($id in $listings_list) {
 $delivery_count = Get-ChildItem -Directory "$($upload_path)\*" -Exclude "Missing Covers"| Measure-Object | %{$_.Count}
 $folders = Get-ChildItem -Directory $upload_path
 
-##Update Progress
+##Stage 4: Check Missing Covers -> Update Progress
 $progress += 1
-show-progress $progress $copy_id
+show-progress $progress
 
 ##Check for missing covers and write total counts to each Set folder
 Foreach ($folder in $folders) {
@@ -206,9 +261,23 @@ Foreach ($folder in $folders) {
     }
 }
 
-##Update Progress
+##Final count of ready for delivery and accumulating errors
+$delivered = $delivered_list.Count
+$total_errors = $tracker_err + $cover_err
+
+##Stage 5: Write Log files -> Update Progress
 $progress += 1
-show-progress $progress $copy_id
+show-progress $progress
+
+##Write log files
+log-delivery
+log-error
+log-count
+
+
+##Stage 6: Archiving -> Update Progress
+$progress += 1
+show-progress $progress
 
 ##Create Archive Folder
 $archive_name = Get-Date -UFormat "%m-%d-%Y"
@@ -217,31 +286,11 @@ if (-Not (Test-Path "$($archive_path)\$($archive_name)" -PathType Container)) {
         }
 
 ##Archive sets
-Foreach ($listing in $listings){
-    $id = extract-id $listing
-    if ($delivered_list -like $id) {
-        Move-Item -Path "$($client_path)\$($listing)" -Destination "$($archive_path)\$($archive_name)\$($listing)" -Force
-        $copy_id += (1/$delivered_list.Count)
-        show-progress $progress $copy_id
-    }
-}
+listings-archive
 
-##Final count of ready for delivery and accumulating errors
-$delivered = $delivered_list.Count
-$total_errors = $tracker_err + $cover_err
-
-##Update Progress
+##Stage 7: End Process -> Update Progress
 $progress += 1
-show-progress $progress $copy_id
-
-##Write log files
-log-delivery
-log-error
-log-count
-
-##Update Progress
-$progress += 1
-show-progress $progress $copy_id
+show-progress $progress
 
 ##Pop-up window to confirm process complete
 $wshell = New-Object -ComObject Wscript.Shell
