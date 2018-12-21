@@ -6,7 +6,7 @@
 # LANG:      Bash Script
 #
 # This script manages monitoring changes on Google Cloud and updating
-# local NAS server accordingly.
+# local NAS server accordingly
 #
 # VERSION HISTORY:
 # 1.0    12/10/2018		  Initial Version
