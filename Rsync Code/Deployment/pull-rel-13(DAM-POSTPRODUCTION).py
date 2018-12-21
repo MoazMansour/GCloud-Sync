@@ -47,6 +47,7 @@ def run_sync(path,dir,event,file):
 			call(["mkdir","-p",l_root+dir])						#assures that the target directory (full path) exists on NAS
 			call(["gsutil","-m","cp",bucket+g_root+path+file,l_root+path+file])     #copies the changed/created file to its destination on NAS
 		elif event == "OBJECT_DELETE":							#checks if file has been deleted or renamed
+			call(["mkdir","-p",l_trash+dir])						#assures that the target directory (full path) exists on NAS
 			call(["mv",l_root+path+file,l_trash+path+file])						#removes file from NAS
 			call(["find",l_root+path,"-type","d","-empty","-delete"]) #if emptied removes the target folder and its empty subordinates to comply with gcloud object logic
 ###
@@ -56,6 +57,7 @@ def run_sync(path,dir,event,file):
 			call(["cp","-P","dummy",l_root+dir+"/.initate"])
 			call(["cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":							#checks if folder has been deleted
+			call(["mkdir","-p",l_trash+dir])						#assures that the target directory (full path) exists on NAS
 			call(["find",l_root+path,"-type","d","-empty","-exec","mv","-f",l_root+dir,l_trash+dir]) #removes the target folder and its empty subordinates to comply with gcloud object logic
 #### End of object changes actions
 ################################################

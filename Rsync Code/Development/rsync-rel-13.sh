@@ -65,7 +65,7 @@ function run_sync {
       else
         if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                    #check deleting types of changes
           proc_control&
-          gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$folder$file"&                                             #remove folder recersuively from cloud
+          gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"&                                             #remove folder recersuively from cloud
           proc=$(( proc-1 ))
           trap "kill 0" EXIT
         fi
@@ -81,7 +81,7 @@ function run_sync {
     else
       if [[ $event == "DELETE" ]] || [[ $event == "MOVED_FROM" ]]; then                       #check deletion types of changes
         proc_control&
-        gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$folder$file"&                                                #delete only this specific file
+        gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"&                                                #delete only this specific file
         proc=$(( proc-1 ))
         trap "kill 0" EXIT
       fi
