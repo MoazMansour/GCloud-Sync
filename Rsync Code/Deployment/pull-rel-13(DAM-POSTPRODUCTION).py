@@ -12,6 +12,7 @@
 # 1.0    12/05/2018		Initial Version
 # 1.1    12/12/2018    	Exlcuded rsync
 # 1.2    12/17/2018    	Integrated flow control
+# 1.3    12/21/2018    	Moving deleted files to trash
 ###############################################################################
 
 ##############################################################
@@ -26,10 +27,13 @@ from google.cloud import pubsub_v1
 
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719" 						#The project I am assigned to on Gcloud
-subscription_name = "mySub" 									#Pull subscription channel created to pull all object changes messages
-bucket = "gs://rsync-trigger-test/" 							#Bucket path
-g_root = "GSync/" 												#root folder subject to change on the cloud
-l_root = "/rsync-test/"											#root folder subject to change on the local server
+subscription_name = "PostProductionSub" 						#Pull subscription channel created to pull all object changes messages
+bucket = "gs://dam-staging/" 									#Bucket path
+g_root = "Post-Production/" 									#root folder subject to change on the cloud
+l_root = "/dam-postproduction/"									#root folder subject to change on the local server
+g_trash= "Trash/"                                    			#Trash path on the cloud bucket
+l_trash= l_root+"@Recycle/"                          			#Trash path on the local server
+max_proc = 10													#setting maximum number of messages to be processed
 
 subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_name)
@@ -43,7 +47,8 @@ def run_sync(path,dir,event,file):
 			call(["mkdir","-p",l_root+dir])						#assures that the target directory (full path) exists on NAS
 			call(["gsutil","-m","cp",bucket+g_root+path+file,l_root+path+file])     #copies the changed/created file to its destination on NAS
 		elif event == "OBJECT_DELETE":							#checks if file has been deleted or renamed
-			call(["rm",l_root+path+file])						#removes file from NAS
+			call(["mkdir","-p",l_trash+dir])						#assures that the target directory (full path) exists on NAS
+			call(["mv",l_root+path+file,l_trash+path+file])						#removes file from NAS
 			call(["find",l_root+path,"-type","d","-empty","-delete"]) #if emptied removes the target folder and its empty subordinates to comply with gcloud object logic
 ###
 	else:														#if the file is empty it means it was a folder action (usually a new empty folder has been created or deleted)
@@ -52,7 +57,8 @@ def run_sync(path,dir,event,file):
 			call(["cp","-P","dummy",l_root+dir+"/.initate"])
 			call(["cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":							#checks if folder has been deleted
-			call(["find",l_root+path,"-type","d","-empty","-delete"]) #removes the target folder and its empty subordinates to comply with gcloud object logic
+			call(["mkdir","-p",l_trash+dir])						#assures that the target directory (full path) exists on NAS
+			call(["find",l_root+path,"-type","d","-empty","-exec","mv","-f",l_root+dir,l_trash+dir]) #removes the target folder and its empty subordinates to comply with gcloud object logic
 #### End of object changes actions
 ################################################
 
