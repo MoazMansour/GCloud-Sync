@@ -18,18 +18,25 @@
 #####################################################
 
 ##Directories path parameters
-$csv_path = "C:\Users\Blink Workstation\Downloads\photo_sets.csv"
+$csv_date = Get-Date -UFormat "%Y%m%d"
+$csv_file = "photo_sets_export_$($csv_date).csv"
+$csv_path = "C:\Users\Blink Workstation\Downloads\$($csv_file)"
 $client_path = "Z:\Auto test"
 $upload_path = "Y:\Client\Airbnb\Plus\00 - DARYL Pull\Auto Test"
 $missing_covers = "$($upload_path)\Missing Covers"
 $archive_path = "Y:\Client\Airbnb\Plus\Delivered Test"
+$massupdater_file = "MassUpdater_$($csv_date).csv"
+$massupdater = "C:\Users\Blink Workstation\Downloads\"
+
+#Export Link
+$export_link = "https://cs.blink.la/photosets/26/63/export.csv?media_type=&market=&vendor_id=&general_status=&status=&status%5B%5D=90000&client_approval=&vendor_status=&reshoot_reason=&qc_assigned_to=&editorial_assigned_to=&crop_cover_assigned_to=&feedback_assigned_to=&technical_assigned_to=&sent_to_client_from=&sent_to_client_to=&feedback_date_from=&feedback_date_to=&sequencing_completed_from=&sequencing_completed_to=&received_from_client_from=&received_from_client_to=&received_from_vendor_from=&received_from_vendor_to=&sent_to_vendor_from=&sent_to_vendor_to=&feedback_completed_r1_from=&feedback_completed_r1_to=&feedback_completed_r2_from=&feedback_completed_r2_to=&require_review_by_client_from=&require_review_by_client_to=&qc_qm_date_complete_from=&qc_qm_date_complete_to=&created_from=&created_to=&modified_from=&modified_to=&range_field=&range_value=&sort=&direction="
 
 ##Where to put the log files
 $error_log = "C:\Users\Blink Workstation\Downloads\error_log.txt"    #defining the error log path
 $del_log = "C:\Users\Blink Workstation\Downloads\delivery_log.txt"      #defining the error log path
 $Index_txt = "$($upload_path)\File Count List.txt"
 $total_count = "total.txt"
-$massupdater = "C:\Users\Blink Workstation\Downloads\MassUpdater.csv"
+
 ##############################
 
 #initate a list for photosets
@@ -224,14 +231,44 @@ function massupdater {
 }
 
 ################################################################################################
+
+#### Download CSV Export File ####
+function Download-CSV {
+    $timeout = 20
+    Write-Host "Downloading CSV File"
+    Start-Process($export_link) -WindowStyle Hidden
+    $download_status = Test-Path $csv_path -PathType Leaf
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    $time_flag = ($timer.Elapsed.TotalSeconds -lt $timeout)
+    While ((-Not $download_status) -and ($time_flag)) {
+        $download_status = Test-Path $csv_path -PathType Leaf
+        $time_flag = ($timer.Elapsed.TotalSeconds -lt $timeout)     
+        }
+    $timer.Stop()
+    if ($time_flag) {
+        Write-Host "[Done] : " -ForegroundColor Green -NoNewline
+        Write-Host "CSV File Downloaded"
+    } Else {
+        Write-Host "Error: Please check internet connection and retry" -ForegroundColor Red
+        Exit
+    }
+}
+
+
+################################################################################################
 #### Main Body ###
+
+##Clear space for progress bar
+"`r `n `r `n `r `n `r `n `r `n `r `n `n `n `n `n `n"
+
+##Download the CSV file
+Download-CSV
 
 ##Clear Error Log before start
 $Error.clear()
 
 ##Stage 1: Reading CSV -> Update Progress
 $error_count = show-progress $progress $error_count
-"`r `n `r `n `r `n `r `n `r `n `r `n `n `n `n `n `n"
 
 ##Read Set Ids from the CSV file
 Import-Csv $csv_path |`
