@@ -50,10 +50,10 @@ function run_sync {
 
 # If the object changed was a directory then copy a dummy file into the bucket to create the folder
   if [[ $event == *"ISDIR"* ]]; then                                                          #check directory change
-    if [[ $event == *"CREATE"* ]]; then                       #check creating types of changes
+    if [[ $event == *"CREATE"* ]]; then                                                       #check creating types of changes
       proc_control&
-      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"
-      gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                   #creates a dummy file to create a folder on the cloud
+      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"                             #creates a dummy file to create a folder on the cloud
+      gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                    #copies the same dummy file to the folder on the local server
       proc=$(( proc-1 ))
       trap "kill 0" EXIT
     else
