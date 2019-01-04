@@ -1,0 +1,16 @@
+from selenium import webdriver
+# Using Chrome to access web
+driver = webdriver.Chrome (executable_path = "/Users/moazmansour/OneDrive/Blink/Programs/Airbnb Automation/chromedriver")
+# Open the website
+driver.get('https://cs.blink.la/photosets/update/26/63')
+id_box = driver.find_element_by_name('email')
+passwd_box = driver.find_element_by_name('password')
+
+# Send id information
+id_box.send_keys('moaz.mansour@blink.la')
+passwd_box.send_keys('Nannas&Zozza1801')
+
+# Find login button
+login_button = driver.find_element_by_tag_name('button')
+# Click login
+login_button.click()
