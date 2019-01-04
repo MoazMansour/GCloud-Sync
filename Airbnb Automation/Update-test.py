@@ -22,7 +22,7 @@ login_button.click()
 
 #Find and click browse CSV find_element_by_name
 CSV_input = driver.find_element_by_xpath('//input[@type="file"]')
-massupdater_path = "/Users/moazmansour/Desktop/MassUpdater.csv"
+massupdater_path = "/Users/moazmansour/Desktop/MassUpdater_20190102.csv"
 CSV_input.send_keys(massupdater_path)
 update_button = driver.find_element_by_id('importInformation')
 update_button.click()
