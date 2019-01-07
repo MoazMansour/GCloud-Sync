@@ -20,7 +20,7 @@
 
 
 import time
-from subprocess import call 									#import subprocess library to run bash commands in script
+from subprocess import call                                                                     # Import subprocess library to run bash commands in script 
 from subprocess import check_output
 from google.cloud import pubsub_v1
 
