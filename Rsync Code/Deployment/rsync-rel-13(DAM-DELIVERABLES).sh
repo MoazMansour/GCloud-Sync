@@ -23,7 +23,7 @@
 #! /bin/bash
 
 EVENTS="CREATE,DELETE,MOVED_TO,MOVED_FROM"          #specifying kind of events to be monitored
-bucket="gs://dam-staging/"         						      #Bucket path
+bucket="gs://dam-production/"         						      #Bucket path
 g_root="Deliverables/" 												      #root folder subject to change on the cloud
 l_root="/dam-deliverable/"											    #root folder subject to change on the local server
 g_trash="Trash/"                                    #Trash path on the cloud bucket

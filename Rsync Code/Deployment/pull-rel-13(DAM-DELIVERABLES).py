@@ -28,7 +28,7 @@ from google.cloud import pubsub_v1
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719" 						#The project I am assigned to on Gcloud
 subscription_name = "DeliverSub" 								#Pull subscription channel created to pull all object changes messages
-bucket = "gs://dam-staging/" 									#Bucket path
+bucket = "gs://dam-production/" 									#Bucket path
 g_root = "Deliverables/" 										#root folder subject to change on the cloud
 l_root = "/dam-deliverable/"									#root folder subject to change on the local server
 g_trash= "Trash/"                                    			#Trash path on the cloud bucket
