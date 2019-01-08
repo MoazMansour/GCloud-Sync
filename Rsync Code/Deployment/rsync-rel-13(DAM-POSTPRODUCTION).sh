@@ -1,12 +1,12 @@
 ###############################################################################
-# NAME:      rsync-rel-12.sh
+# NAME:      rsync-rel-13.sh
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:    moaz.mansour@blink.la
 # DATE:      12/17/2018
 # LANG:      Bash Script
 #
 # This script manages monitoring changes on Google Cloud and updating
-# local NAS server accordingly
+# local NAS server accordingly.
 #
 # VERSION HISTORY:
 # 1.0    12/10/2018		  Initial Version
@@ -24,8 +24,8 @@
 
 EVENTS="CREATE,DELETE,MOVED_TO,MOVED_FROM"          #specifying kind of events to be monitored
 bucket="gs://dam-production/"         						      #Bucket path
-g_root="Post-Production/" 												  #root folder subject to change on the cloud
-l_root="/dam-postproduction/"											  #root folder subject to change on the local server
+g_root="Post-Production/" 												            #root folder subject to change on the cloud
+l_root="/dam-postproduction/"											          #root folder subject to change on the local server
 g_trash="Trash/"                                    #Trash path on the cloud bucket
 l_trash="$l_root@Recycle/"                          #Trash path on the local server
 proc=0                                              #counter to control number of running procceses
@@ -50,10 +50,10 @@ function run_sync {
 
 # If the object changed was a directory then copy a dummy file into the bucket to create the folder
   if [[ $event == *"ISDIR"* ]]; then                                                          #check directory change
-    if [[ $event == *"CREATE"* ]]; then                                                       #check creating types of changes
+    if [[ $event == *"CREATE"* ]]; then                       #check creating types of changes
       proc_control&
-      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"                             #creates a dummy file to create a folder on the cloud
-      gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                    #copies the same dummy file to the folder on the local server
+      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"
+      gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                   #creates a dummy file to create a folder on the cloud
       proc=$(( proc-1 ))
       trap "kill 0" EXIT
     else
