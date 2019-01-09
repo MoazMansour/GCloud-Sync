@@ -28,6 +28,7 @@ $missing_covers = "$($upload_path)\Missing Covers"
 $archive_path = "Y:\Client\Airbnb\Plus\Delivered Test"
 $massupdater_file = "MassUpdater_$($csv_date).csv"
 $massupdater = "C:\Users\Blink Workstation\Downloads\$($massupdater_file)"
+$mass_uploader = "C:\Users\Blink Workstation\Desktop\automation\Airbnb Automation\MassUploader-V10.py"
 
 #Export Link
 $export_link = "https://cs.blink.la/photosets/26/63/export.csv?media_type=&market=&vendor_id=&general_status=&status=&status%5B%5D=90000&client_approval=&vendor_status=&reshoot_reason=&qc_assigned_to=&editorial_assigned_to=&crop_cover_assigned_to=&feedback_assigned_to=&technical_assigned_to=&sent_to_client_from=&sent_to_client_to=&feedback_date_from=&feedback_date_to=&sequencing_completed_from=&sequencing_completed_to=&received_from_client_from=&received_from_client_to=&received_from_vendor_from=&received_from_vendor_to=&sent_to_vendor_from=&sent_to_vendor_to=&feedback_completed_r1_from=&feedback_completed_r1_to=&feedback_completed_r2_from=&feedback_completed_r2_to=&require_review_by_client_from=&require_review_by_client_to=&qc_qm_date_complete_from=&qc_qm_date_complete_to=&created_from=&created_to=&modified_from=&modified_to=&range_field=&range_value=&sort=&direction="
@@ -60,7 +61,7 @@ $ErrorActionPreference= 'silentlycontinue'
 ##############################
 
 #Status Bar
-$stat = ("Reading CSV File", "Copying Exports to Upload Folder", "Comparing CS Export to Ready for Client", "Checking Missing Covers", "Writing to log files", "Archiving Delivered", "Done")
+$stat = ("Reading CSV File", "Copying Exports to Upload Folder", "Comparing CS Export to Ready for Client", "Checking Missing Covers", "Writing to log files", "Changing Status on CS", "Archiving Delivered", "Done")
 
 ################################################################################################
 
@@ -366,9 +367,9 @@ $progress += 1
 $error_count = show-progress $progress $error_count
 
 ##Call the python Script
-python MassUploader-V10.py
+python $mass_uploader $massupdater
 
-##Stage 6: Archiving -> Update Progress
+##Stage 7: Archiving -> Update Progress
 $progress += 1
 $error_count = show-progress $progress $error_count
 

@@ -16,17 +16,18 @@
 #####################################################
 from selenium import webdriver
 import base64
+import sys
 
 ## Changable Parameters
 username = "moaz.mansour@blink.la"                                                              # Username
 encoded_pass = "TmFubmFzJlpvenphMTgwMQ=="                                                       # The b64 encoded user password
 password = base64.b64decode(encoded_pass)                                                       # decoding password to be sent to chrome
-chrome_driver = "/Users/moazmansour/OneDrive/Blink/Programs/Airbnb Automation/chromedriver"     # Path to chrome driver executable file
+chrome_driver = 'C:\\Users\\Blink Workstation\\Desktop\\automation\\Airbnb Automation\\WinDriver\\chromedriver.exe'        # Path to chrome driver executable file on Windows
 cs_link = 'https://cs.blink.la/photosets/update/26/63'                                          # Link to CS
-massupdater_path = "/Users/moazmansour/Desktop/MassUpdater_20190102.csv"                        # Path to massupdater file
+massupdater_path = str(sys.argv[1])                                                             # Reading argument sent from powrshell which is Path to massupdater file on Windows
 
 # Using Chrome to access web
-driver = webdriver.Chrome (executable_path = chrome_driver)                                     # Open Chrome
+driver = webdriver.Chrome(chrome_driver)                                        # Open Chrome
 
 # Open the website
 driver.get(cs_link)                                                                             # Send a get request to CS
@@ -46,4 +47,5 @@ CSV_input = driver.find_element_by_xpath('//input[@type="file"]')               
 CSV_input.send_keys(massupdater_path)                                                           # sending the massupdater path
 update_button = driver.find_element_by_id('importInformation')                                  # Find the button to update information
 update_button.click()                                                                           # Click the update button
-driver.quit()
+#driver.quit()
+########################################### Massupdater Upload Script###########################################
