@@ -21,7 +21,8 @@
 #####################################################
 
 ## Reading variables from config file
-$content = Get-Content -Path "C:\Users\Blink Workstation\Desktop\automation\Airbnb Automation\config.txt"
+$current_loc = Get-Location
+$content = Get-Content -Path "$($current_loc)\config.txt"
 ForEach ($line in $content){
    $var = $line.Split('$')
    New-Variable -Name $var[0] -Value $var[1]
@@ -43,13 +44,12 @@ $massupdater = "$($massupdater)\$($massupdater_file)"
 #$archive_path = "Y:\Client\Airbnb\Plus\Delivered Test"
 #$mass_uploader = "C:\Users\Blink Workstation\Desktop\automation\Airbnb Automation\MassUploader-V10.py"
 
-
 #Export Link
 #$export_link = "https://cs.blink.la/photosets/26/63/export.csv?media_type=&market=&vendor_id=&general_status=&status=&status%5B%5D=90000&client_approval=&vendor_status=&reshoot_reason=&qc_assigned_to=&editorial_assigned_to=&crop_cover_assigned_to=&feedback_assigned_to=&technical_assigned_to=&sent_to_client_from=&sent_to_client_to=&feedback_date_from=&feedback_date_to=&sequencing_completed_from=&sequencing_completed_to=&received_from_client_from=&received_from_client_to=&received_from_vendor_from=&received_from_vendor_to=&sent_to_vendor_from=&sent_to_vendor_to=&feedback_completed_r1_from=&feedback_completed_r1_to=&feedback_completed_r2_from=&feedback_completed_r2_to=&require_review_by_client_from=&require_review_by_client_to=&qc_qm_date_complete_from=&qc_qm_date_complete_to=&created_from=&created_to=&modified_from=&modified_to=&range_field=&range_value=&sort=&direction="
 
 ##Where to put the log files
-$error_log = "$($error_log)\error_log.txt"    #defining the error log path
-$del_log = "$($del_log)\delivery_log.txt"      #defining the error log path
+$error_log = "$($log_dir)\error_log.txt"    #defining the error log path
+$del_log = "$($log_dir)\delivery_log.txt"      #defining the error log path
 $Index_txt = "$($upload_path)\File Count List.txt"
 $total_count = "total.txt"
 
@@ -381,6 +381,8 @@ $progress += 1
 $error_count = show-progress $progress $error_count
 
 ##Call the python Script
+$chrome_driver = "$($current_loc)\chromedriver.exe"
+$mass_uploader = "$($current_loc)\MassUploader.py"
 python $mass_uploader $massupdater $username $password $chrome_driver $cs_upload
 
 ##Stage 7: Archiving -> Update Progress
