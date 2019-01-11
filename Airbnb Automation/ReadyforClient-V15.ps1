@@ -25,11 +25,16 @@ $ErrorActionPreference= 'silentlycontinue'
 
 ## Reading variables from config file
 $current_loc = Get-Location
-$content = Get-Content -Path "$($current_loc)\conf.txt"
+$content = Get-Content -Path "$($current_loc)\config.txt"
 ForEach ($line in $content){
    $var = $line.Split(';')
-   New-Variable -Name $var[0] -Value $var[1]
+   if (-Not (Test-Path "Variable:\$($var[0])")){
+     New-Variable -Name $var[0] -Value $var[1] -Scope Global
+   } Else {
+     Set-Variable -Name $var[0] -Value $var[1] -Scope Global
+   }
 }
+
 
 ##Directories path parameters
 $csv_date = Get-Date -UFormat "%Y%m%d"
