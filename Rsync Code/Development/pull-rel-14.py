@@ -49,6 +49,8 @@ def run_sync(path,dir,event,file):
 			call(["mkdir","-p",l_root+dir])                                                             # assures that the target directory (full path) exists on NAS
 			call(["gsutil","-m","cp",bucket+g_root+path+file,l_root+path+file])                         # copies the changed/created file to its destination on NAS
 		elif event == "OBJECT_DELETE":                                                                	# checks if file has been deleted or renamed
+			f = open(cloud_log,a)                     													# open cloud deletion log file
+			f.write(path+file)																			# log the deletion path
 			call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
 			call(["mv",l_root+path+file,l_trash+path+file])                                             # removes file from NAS
 			call(["find",l_root+path,"-type","d","-empty","-delete"])                                   # if emptied removes the target folder and its empty subordinates to comply with gcloud object logic
@@ -59,6 +61,8 @@ def run_sync(path,dir,event,file):
 			call(["cp","-P","dummy",l_root+dir+"/.initate"])
 			call(["cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":                                                                	# checks if folder has been deleted
+			f = open(cloud_log,a)                     													# open cloud deletion log file
+			f.write(path)																				# log the deletion path
 			call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
 			call(["find",l_root+path,"-type","d","-empty","-exec","mv","-f",l_root+dir,l_trash+dir])    # removes the target folder and its empty subordinates to comply with gcloud object logic
 #### End of object changes actions
@@ -95,8 +99,13 @@ def callback(message):
 		if (change_check.find('posix-uid:') == -1):
 			run_sync(path,dir,event,file)
 	elif event == "OBJECT_DELETE":
-		delete_check =
-		run_sync(path,dir,event,file)
+		f = open(NAS_log,r+s)
+		delete_check = f.read()
+		if (delete_check.find(path+file) != -1):
+			delete_check.replace(path+file, '')
+			f.write(delete_check)
+		else:
+			run_sync(path,dir,event,file)
 
 ### End of function
 ####################################################

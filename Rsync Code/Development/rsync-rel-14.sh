@@ -30,6 +30,8 @@ g_trash="Trash/"                                    #Trash path on the cloud buc
 l_trash="$l_root@Recycle/"                          #Trash path on the local server
 proc=0                                              #counter to control number of running procceses
 max_proc=7                                          #set max number of allowed proccesses at once
+cloud_log="/home/blink/programs/cloud_del"  				# Path to cloud deleting log
+NAS_log="/home/blink/programs/NAS_del"  						# Path to NAS deleting log
 
 #############################################
 #Queue function
@@ -65,6 +67,7 @@ function run_sync {
       else
         if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                    #check deleting types of changes
           proc_control&
+          echo "$(cat $NAS_log)$folder$file" > $NAS_log
           gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"&                                             #remove folder recersuively from cloud
           proc=$(( proc-1 ))
           trap "kill 0" EXIT
@@ -81,6 +84,7 @@ function run_sync {
     else
       if [[ $event == "DELETE" ]] || [[ $event == "MOVED_FROM" ]]; then                       #check deletion types of changes
         proc_control&
+        echo "$(cat $NAS_log)$folder$file" > $NAS_log
         gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"&                                                #delete only this specific file
         proc=$(( proc-1 ))
         trap "kill 0" EXIT
@@ -108,15 +112,21 @@ function callback() {
   #####
   # Check if it was a local or remote change to run sync
   if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                 #check if it was a create to get owner
-  uname="$(stat --format '%U' "$path$file")"                                         #extract owner of file
-  if [ "${uname}" = "root" ]; then                                                   #if root is owner then change was local
+  uname="$(stat --format '%U' "$path$file")"                                          #extract owner of file
+  if [ "${uname}" = "root" ]; then                                                    #if root is owner then change was local
     proc_control&
-    run_sync "$path" "$folder" "$event" "$file"&                                     #call the sync function
+    run_sync "$path" "$folder" "$event" "$file"&                                      #call the sync function
   fi
   else
-    if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                #check if it was a deletion
-      proc_control&
-      run_sync "$path" "$folder" "$event" "$file"&                                    #run the sync function
+    if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then             #check if it was a deletion
+      read delete_check< <(grep -w "$cloud_log" -e "$folder$file")
+      if [[ $delete_check == "$folder$file" ]]; then
+        sed -i "s/$folder$file/ /g" cloud_log
+      fi
+      else
+        proc_control&
+        run_sync "$path" "$folder" "$event" "$file"&                                    #run the sync function
+      fi
     fi
   fi
   proc=$(( proc-1 ))
