@@ -1,5 +1,5 @@
 ﻿###############################################################################
-# NAME:      ReadyforClient-V12.ps1
+# NAME:      ReadyforClient.ps1
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:    moaz.mansour@blink.la
 # DATE:      12/21/2018
@@ -20,20 +20,26 @@
 ################## Client Delivery ##################
 #####################################################
 
+#Silence Error to display on screen
+$ErrorActionPreference= 'silentlycontinue'
+
 ## Reading variables from config file
 $current_loc = Get-Location
 $content = Get-Content -Path "$($current_loc)\config.txt"
 ForEach ($line in $content){
-   $var = $line.Split('$')
-   New-Variable -Name $var[0] -Value $var[1]
+   $var = $line.Split(';')
+   if (-Not (Test-Path "Variable:\$($var[0])")){
+     New-Variable -Name $var[0] -Value $var[1] -Scope Global
+   } Else {
+     Set-Variable -Name $var[0] -Value $var[1] -Scope Global
+   }
 }
+
 
 ##Directories path parameters
 $csv_date = Get-Date -UFormat "%Y%m%d"
 $csv_file = "photo_sets_export_$($csv_date).csv"
-Write-Host $csv_file
-Write-Host $csv_path
-$csv_path = "$($csv_path)\$($csv_file)"
+$csv_path = "$($csv_loc)\$($csv_file)"
 
 $missing_covers = "$($upload_path)\Missing Covers"
 $massupdater_file = "MassUpdater_$($csv_date).csv"
@@ -70,8 +76,6 @@ $cover_err = 0
 $delivered = 0
 $progress = 0
 $error_count = 0
-#Silence Error to display on screen
-$ErrorActionPreference= 'silentlycontinue'
 ##############################
 
 #Status Bar
@@ -277,6 +281,9 @@ function Download-CSV {
 ##Clear space for progress bar
 "`r `n `r `n `r `n `r `n `r `n `r `n `n `n `n `n `n"
 
+##View username
+Write-Host "Username: $($username)"
+
 ##Download the CSV file
 Download-CSV
 
@@ -374,7 +381,6 @@ log-delivery
 log-error
 log-count
 massupdater
-
 
 ##Stage 6: Update CS -> Update Progress
 $progress += 1
