@@ -120,8 +120,9 @@ function callback() {
   fi
   else
     if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then             # check if it was a deletion
-      read delete_check< <(grep -w "$cloud_log" -e "$folder$file")                    # check if the deletion was performed by the cloud
-      if [[ $delete_check == "$folder$file" ]]; then
+      read log_file< <(grep -w "$cloud_log" -e "$folder$file")                    # check if the deletion was performed by the cloud
+      if echo "$log_file" | grep -q "$folder$file"; then
+        printf "Deletion performed by GCloud\n"
         sed -i 's,'"$folder$file"', ,g' "$cloud_log"                                  # removes the file path from the cloud deletion log
       else
         proc_control&

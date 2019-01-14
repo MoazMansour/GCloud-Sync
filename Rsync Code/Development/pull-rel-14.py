@@ -46,19 +46,18 @@ subscription_path = subscriber.subscription_path(project_id, subscription_name)
 ###############################################
 #Check delete function
 def check_delete(path,file):
-	f = open(NAS_log,"r+")
+	f = open(NAS_log,"r")                                                					   # Open and reads the NAS deletion log file
 	change_check = f.read()
-#	change_check = check_output(["grep","-w",NAS_log,"-e",path+file])    					   # checks if the deletion was performed by NAS
-	print ("running delete check")
-	if (change_check.find(path+file) != -1):
-		print("Found in NAS")
-		change_check.replace(path+file," ")
+	f.close()
+	if (change_check.find(path+file) != -1):                              					   # Check if the deletion was performed by NAS
+		print("Deletion Performed by NAS")
+		change_check = change_check.replace(path+file," ")                                  	# Removes the record from the log file
+		f = open(NAS_log,"w")
 		f.write(change_check)
 		f.close()
-#		call(["sed","-i","'s%"+path+file+"% %g'",NAS_log])                  				   # removes the file path after deletion from the log file
-		return False
+		return False                                                         				   # Return false to avoid deleting
 	else:
-		return True
+		return True                                                          				   # Returne true to indicate that it is local action and deletion is required
 
 ###############################################
 #Main synchronization function
@@ -69,8 +68,6 @@ def run_sync(path,dir,event,file):
 			call(["mkdir","-p",l_root+dir])                                                             # assures that the target directory (full path) exists on NAS
 			call(["gsutil","-m","cp",bucket+g_root+path+file,l_root+path+file])                         # copies the changed/created file to its destination on NAS
 		elif event == "OBJECT_DELETE":                                                                	# checks if file has been deleted or renamed
-# 			 call(["echo","-e","$(cat",cloud_log+")"+path+file+"| ",">",cloud_log])  					# add the deletion path to the cloud log
-			print("Deleting Object")
 			f = open(cloud_log,"a")
 			f.write(path+file+"| ")
 			f.close()
@@ -84,7 +81,6 @@ def run_sync(path,dir,event,file):
 			call(["cp","-P","dummy",l_root+dir+"/.initate"])
 			call(["cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":                                                                	# checks if folder has been deleted
-#			 call(["echo","-e","$(cat",cloud_log+")"+dir+"| ",">",cloud_log])  							# add the deletion path to the cloud log
 			f = open(cloud_log,"a")
 			f.write(dir+"| ")
 			f.close()
@@ -124,11 +120,9 @@ def callback(message):
 		if (change_check.find('posix-uid:') == -1):                          					   # check file metadata to see if it wasn't uploaded via NAS
 			run_sync(path,dir,event,file)
 	elif event == "OBJECT_DELETE":
-		print ("calling function")
 		logging.basicConfig()
 		flag = check_delete(path,file)
 		if (flag):
-			print(flag)
 			run_sync(path,dir,event,file)
 
 ### End of function
