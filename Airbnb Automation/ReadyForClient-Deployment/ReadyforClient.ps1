@@ -1,5 +1,5 @@
 ﻿###############################################################################
-# NAME:      ReadyforClient-V12.ps1
+# NAME:      ReadyforClient.ps1
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:    moaz.mansour@blink.la
 # DATE:      12/21/2018
@@ -12,30 +12,50 @@
 # 1.1    12/19/2018    Include Archiving
 # 1.2    12/21/2018    Includes MassUpdater
 # 1.3    01/02/2019    CSV Auto Download/Throw Errors
+# 1.4    01/09/2019    MassUpdater Uploader added
+# 1.5    01/10/2019    Reading Variables from a Config file
 ###############################################################################
 
 #####################################################
 ################## Client Delivery ##################
 #####################################################
 
+#Silence Error to display on screen
+$ErrorActionPreference= 'silentlycontinue'
+
+## Reading variables from config file
+$current_loc = Get-Location
+$content = Get-Content -Path "$($current_loc)\config.txt"
+ForEach ($line in $content){
+   $var = $line.Split(';')
+   if (-Not (Test-Path "Variable:\$($var[0])")){
+     New-Variable -Name $var[0] -Value $var[1] -Scope Global
+   } Else {
+     Set-Variable -Name $var[0] -Value $var[1] -Scope Global
+   }
+}
+
+
 ##Directories path parameters
 $csv_date = Get-Date -UFormat "%Y%m%d"
 $csv_file = "photo_sets_export_$($csv_date).csv"
-$csv_path = "C:\Users\Blink Workstation\Downloads\$($csv_file)"
-$client_path = "Z:\Auto test"
-$upload_path = "Y:\Client\Airbnb\Plus\00 - DARYL Pull\Auto Test"
+$csv_path = "$($csv_loc)\$($csv_file)"
+
 $missing_covers = "$($upload_path)\Missing Covers"
-$archive_path = "Y:\Client\Airbnb\Plus\Delivered Test"
 $massupdater_file = "MassUpdater_$($csv_date).csv"
-$massupdater = "C:\Users\Blink Workstation\Downloads\$($massupdater_file)"
-$mass_uploader = "C:\Users\Blink Workstation\Desktop\automation\Airbnb Automation\MassUploader-V10.py"
+$massupdater = "$($massupdater)\$($massupdater_file)"
+
+#$client_path = "Z:\Auto test"
+#$upload_path = "Y:\Client\Airbnb\Plus\00 - DARYL Pull\Auto Test"
+#$archive_path = "Y:\Client\Airbnb\Plus\Delivered Test"
+#$mass_uploader = "C:\Users\Blink Workstation\Desktop\automation\Airbnb Automation\MassUploader-V10.py"
 
 #Export Link
-$export_link = "https://cs.blink.la/photosets/26/63/export.csv?media_type=&market=&vendor_id=&general_status=&status=&status%5B%5D=90000&client_approval=&vendor_status=&reshoot_reason=&qc_assigned_to=&editorial_assigned_to=&crop_cover_assigned_to=&feedback_assigned_to=&technical_assigned_to=&sent_to_client_from=&sent_to_client_to=&feedback_date_from=&feedback_date_to=&sequencing_completed_from=&sequencing_completed_to=&received_from_client_from=&received_from_client_to=&received_from_vendor_from=&received_from_vendor_to=&sent_to_vendor_from=&sent_to_vendor_to=&feedback_completed_r1_from=&feedback_completed_r1_to=&feedback_completed_r2_from=&feedback_completed_r2_to=&require_review_by_client_from=&require_review_by_client_to=&qc_qm_date_complete_from=&qc_qm_date_complete_to=&created_from=&created_to=&modified_from=&modified_to=&range_field=&range_value=&sort=&direction="
+#$export_link = "https://cs.blink.la/photosets/26/63/export.csv?media_type=&market=&vendor_id=&general_status=&status=&status%5B%5D=90000&client_approval=&vendor_status=&reshoot_reason=&qc_assigned_to=&editorial_assigned_to=&crop_cover_assigned_to=&feedback_assigned_to=&technical_assigned_to=&sent_to_client_from=&sent_to_client_to=&feedback_date_from=&feedback_date_to=&sequencing_completed_from=&sequencing_completed_to=&received_from_client_from=&received_from_client_to=&received_from_vendor_from=&received_from_vendor_to=&sent_to_vendor_from=&sent_to_vendor_to=&feedback_completed_r1_from=&feedback_completed_r1_to=&feedback_completed_r2_from=&feedback_completed_r2_to=&require_review_by_client_from=&require_review_by_client_to=&qc_qm_date_complete_from=&qc_qm_date_complete_to=&created_from=&created_to=&modified_from=&modified_to=&range_field=&range_value=&sort=&direction="
 
 ##Where to put the log files
-$error_log = "C:\Users\Blink Workstation\Downloads\error_log.txt"    #defining the error log path
-$del_log = "C:\Users\Blink Workstation\Downloads\delivery_log.txt"      #defining the error log path
+$error_log = "$($log_dir)\error_log.txt"    #defining the error log path
+$del_log = "$($log_dir)\delivery_log.txt"      #defining the error log path
 $Index_txt = "$($upload_path)\File Count List.txt"
 $total_count = "total.txt"
 
@@ -56,8 +76,6 @@ $cover_err = 0
 $delivered = 0
 $progress = 0
 $error_count = 0
-#Silence Error to display on screen
-$ErrorActionPreference= 'silentlycontinue'
 ##############################
 
 #Status Bar
@@ -263,6 +281,9 @@ function Download-CSV {
 ##Clear space for progress bar
 "`r `n `r `n `r `n `r `n `r `n `r `n `n `n `n `n `n"
 
+##View username
+Write-Host "Username: $($username)"
+
 ##Download the CSV file
 Download-CSV
 
@@ -361,13 +382,14 @@ log-error
 log-count
 massupdater
 
-
 ##Stage 6: Update CS -> Update Progress
 $progress += 1
 $error_count = show-progress $progress $error_count
 
 ##Call the python Script
-python $mass_uploader $massupdater
+$chrome_driver = "$($current_loc)\chromedriver.exe"
+$mass_uploader = "$($current_loc)\MassUploader.py"
+python $mass_uploader $massupdater $username $password $chrome_driver $cs_upload
 
 ##Stage 7: Archiving -> Update Progress
 $progress += 1
