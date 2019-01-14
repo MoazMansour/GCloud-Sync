@@ -31,7 +31,7 @@ import logging
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719"                                                         # The project I am assigned to on Gcloud
 subscription_name = "mySub"		                 		                                        # Pull subscription channel created to pull all object changes messages
-bucket = "gs://rsync-trigger-test"                                                               # Bucket path
+bucket = "gs://rsync-trigger-test/"                                                               # Bucket path
 g_root = "GSync/"		                                	                                    # root folder subject to change on the cloud
 l_root = "/rsync-test/"		                                  	                                # root folder subject to change on the local server
 g_trash= "Trash/"                                                                               # Trash path on the cloud bucket
