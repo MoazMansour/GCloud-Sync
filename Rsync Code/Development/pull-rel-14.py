@@ -1,5 +1,5 @@
 ###############################################################################
-# NAME:      pull-rel-12.py
+# NAME:      pull-rel-14.py
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:	 moaz.mansour@blink.la
 # DATE:      12/17/2018
@@ -13,6 +13,7 @@
 # 1.1    12/12/2018    	Exlcuded rsync
 # 1.2    12/17/2018    	Integrated flow control
 # 1.3    12/21/2018    	Moving deleted files to trash
+# 1.4    01/14/2019     Adding a deletion log to allow override
 ###############################################################################
 
 ##############################################################
@@ -27,11 +28,11 @@ from google.cloud import pubsub_v1
 
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719"                                                         # The project I am assigned to on Gcloud
-subscription_name = "PostProductionSub"                                                         # Pull subscription channel created to pull all object changes messages
+subscription_name = "DeliverSub"                                                         # Pull subscription channel created to pull all object changes messages
 bucket = "gs://dam-production/"                                                                 # Bucket path
-g_root = "Post-Production/"                                                                     # root folder subject to change on the cloud
-l_root = "/dam-postproduction/"                                                                 # root folder subject to change on the local server
-g_trash= "Trash/"                                                                               # Trash path on the cloud bucket
+g_root = "Deliverables/"                                                                     # root folder subject to change on the cloud
+l_root = "/dam-deliverbale/"                                                                 # root folder subject to change on the local server
+g_trash= "Trash/"                                                                              # Trash path on the cloud bucket
 l_trash= l_root+"@Recycle/"                                                                     # Trash path on the local server
 max_proc = 10                                                                                   # setting maximum number of messages to be processed
 cloud_log = "/home/blink/programs/cloud_del"  													# Path to cloud deleting log
@@ -49,8 +50,7 @@ def run_sync(path,dir,event,file):
 			call(["mkdir","-p",l_root+dir])                                                             # assures that the target directory (full path) exists on NAS
 			call(["gsutil","-m","cp",bucket+g_root+path+file,l_root+path+file])                         # copies the changed/created file to its destination on NAS
 		elif event == "OBJECT_DELETE":                                                                	# checks if file has been deleted or renamed
-			f = open(cloud_log,a)                     													# open cloud deletion log file
-			f.write(path+file)																			# log the deletion path
+			call(["echo","-e","$(cat",cloud_log+")"+path+file+"| ",">",cloud_log])  					# add the deletion path to the cloud log
 			call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
 			call(["mv",l_root+path+file,l_trash+path+file])                                             # removes file from NAS
 			call(["find",l_root+path,"-type","d","-empty","-delete"])                                   # if emptied removes the target folder and its empty subordinates to comply with gcloud object logic
@@ -61,8 +61,7 @@ def run_sync(path,dir,event,file):
 			call(["cp","-P","dummy",l_root+dir+"/.initate"])
 			call(["cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":                                                                	# checks if folder has been deleted
-			f = open(cloud_log,a)                     													# open cloud deletion log file
-			f.write(path)																				# log the deletion path
+			call(["echo","-e","$(cat",cloud_log+")"+dir"| ",">",cloud_log])  							# add the deletion path to the cloud log
 			call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
 			call(["find",l_root+path,"-type","d","-empty","-exec","mv","-f",l_root+dir,l_trash+dir])    # removes the target folder and its empty subordinates to comply with gcloud object logic
 #### End of object changes actions
@@ -96,14 +95,14 @@ def callback(message):
 # Check if the file source was NAS
 	if event == "OBJECT_FINALIZE":
 		change_check = check_output(["gsutil","ls","-L",bucket+g_root+path+file])
-		if (change_check.find('posix-uid:') == -1):
+		if (change_check.find('posix-uid:') == -1):                          					   # check file metadata to see if it wasn't uploaded via NAS
 			run_sync(path,dir,event,file)
 	elif event == "OBJECT_DELETE":
-		f = open(NAS_log,r+s)
-		delete_check = f.read()
+		delete_check = check_output(["grep","-w",NAS_log,"-e",path+file])    					   # checks if the deletion was performed by NAS
+		print ("running delete check")
 		if (delete_check.find(path+file) != -1):
-			delete_check.replace(path+file, '')
-			f.write(delete_check)
+			print("Found in NAS")
+			call(["sed","-i","'s%"+path+file+"% %g'",NAS_log])                  				   # removes the file path after deletion from the log file
 		else:
 			run_sync(path,dir,event,file)
 
@@ -111,7 +110,7 @@ def callback(message):
 ####################################################
 
 ### Calls the function whenever a message is received and limits the subscriber messages to a max
-flow_control = pubsub_v1.types.FlowControl(max_messages=5)
+flow_control = pubsub_v1.types.FlowControl(max_messages=max_proc)
 subscriber.subscribe(subscription_path, callback=callback, flow_control=flow_control)
 
 # The subscriber is non-blocking, so we must keep the main thread from
