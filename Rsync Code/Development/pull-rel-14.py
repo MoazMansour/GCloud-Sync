@@ -28,13 +28,13 @@ from google.cloud import pubsub_v1
 
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719"                                                         # The project I am assigned to on Gcloud
-subscription_name = "DeliverSub"                                                         # Pull subscription channel created to pull all object changes messages
-bucket = "gs://dam-production/"                                                                 # Bucket path
-g_root = "Deliverables/"                                                                     # root folder subject to change on the cloud
-l_root = "/dam-deliverbale/"                                                                 # root folder subject to change on the local server
-g_trash= "Trash/"                                                                              # Trash path on the cloud bucket
-l_trash= l_root+"@Recycle/"                                                                     # Trash path on the local server
-max_proc = 10                                                                                   # setting maximum number of messages to be processed
+subscription_name = "mySub"		                 		                                        # Pull subscription channel created to pull all object changes messages
+bucket = "gs://rsync-trigger-test                                                               # Bucket path
+g_root = "GSync/"		                                	                                    # root folder subject to change on the cloud
+l_root = "/rsync-test/"		                                  	                                # root folder subject to change on the local server
+g_trash= "Trash/"                                                                               # Trash path on the cloud bucket
+l_trash= l_root+"@Recycle/" 	                                                                # Trash path on the local server
+max_proc = 10                  	                                                                # setting maximum number of messages to be processed
 cloud_log = "/home/blink/programs/cloud_del"  													# Path to cloud deleting log
 NAS_log = "/home/blink/programs/NAS_del" 														# Path to NAS deleting log
 
