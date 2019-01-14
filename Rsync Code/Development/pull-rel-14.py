@@ -25,11 +25,13 @@ import time
 from subprocess import call                                                                     # import subprocess library to run bash commands in script
 from subprocess import check_output
 from google.cloud import pubsub_v1
+import logging
+
 
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719"                                                         # The project I am assigned to on Gcloud
 subscription_name = "mySub"		                 		                                        # Pull subscription channel created to pull all object changes messages
-bucket = "gs://rsync-trigger-test                                                               # Bucket path
+bucket = "gs://rsync-trigger-test"                                                               # Bucket path
 g_root = "GSync/"		                                	                                    # root folder subject to change on the cloud
 l_root = "/rsync-test/"		                                  	                                # root folder subject to change on the local server
 g_trash= "Trash/"                                                                               # Trash path on the cloud bucket
@@ -42,6 +44,23 @@ subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_name)
 
 ###############################################
+#Check delete function
+def check_delete(path,file):
+	f = open(NAS_log,"r+")
+	change_check = f.read()
+#	change_check = check_output(["grep","-w",NAS_log,"-e",path+file])    					   # checks if the deletion was performed by NAS
+	print ("running delete check")
+	if (change_check.find(path+file) != -1):
+		print("Found in NAS")
+		change_check.replace(path+file," ")
+		f.write(change_check)
+		f.close()
+#		call(["sed","-i","'s%"+path+file+"% %g'",NAS_log])                  				   # removes the file path after deletion from the log file
+		return False
+	else:
+		return True
+
+###############################################
 #Main synchronization function
 def run_sync(path,dir,event,file):
 ### Check the type of change and act upon it
@@ -50,7 +69,11 @@ def run_sync(path,dir,event,file):
 			call(["mkdir","-p",l_root+dir])                                                             # assures that the target directory (full path) exists on NAS
 			call(["gsutil","-m","cp",bucket+g_root+path+file,l_root+path+file])                         # copies the changed/created file to its destination on NAS
 		elif event == "OBJECT_DELETE":                                                                	# checks if file has been deleted or renamed
-			call(["echo","-e","$(cat",cloud_log+")"+path+file+"| ",">",cloud_log])  					# add the deletion path to the cloud log
+# 			 call(["echo","-e","$(cat",cloud_log+")"+path+file+"| ",">",cloud_log])  					# add the deletion path to the cloud log
+			print("Deleting Object")
+			f = open(cloud_log,"a")
+			f.write(path+file+"| ")
+			f.close()
 			call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
 			call(["mv",l_root+path+file,l_trash+path+file])                                             # removes file from NAS
 			call(["find",l_root+path,"-type","d","-empty","-delete"])                                   # if emptied removes the target folder and its empty subordinates to comply with gcloud object logic
@@ -61,7 +84,10 @@ def run_sync(path,dir,event,file):
 			call(["cp","-P","dummy",l_root+dir+"/.initate"])
 			call(["cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":                                                                	# checks if folder has been deleted
-			call(["echo","-e","$(cat",cloud_log+")"+dir"| ",">",cloud_log])  							# add the deletion path to the cloud log
+#			 call(["echo","-e","$(cat",cloud_log+")"+dir+"| ",">",cloud_log])  							# add the deletion path to the cloud log
+			f = open(cloud_log,"a")
+			f.write(dir+"| ")
+			f.close()
 			call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
 			call(["find",l_root+path,"-type","d","-empty","-exec","mv","-f",l_root+dir,l_trash+dir])    # removes the target folder and its empty subordinates to comply with gcloud object logic
 #### End of object changes actions
@@ -98,12 +124,11 @@ def callback(message):
 		if (change_check.find('posix-uid:') == -1):                          					   # check file metadata to see if it wasn't uploaded via NAS
 			run_sync(path,dir,event,file)
 	elif event == "OBJECT_DELETE":
-		delete_check = check_output(["grep","-w",NAS_log,"-e",path+file])    					   # checks if the deletion was performed by NAS
-		print ("running delete check")
-		if (delete_check.find(path+file) != -1):
-			print("Found in NAS")
-			call(["sed","-i","'s%"+path+file+"% %g'",NAS_log])                  				   # removes the file path after deletion from the log file
-		else:
+		print ("calling function")
+		logging.basicConfig()
+		flag = check_delete(path,file)
+		if (flag):
+			print(flag)
 			run_sync(path,dir,event,file)
 
 ### End of function
