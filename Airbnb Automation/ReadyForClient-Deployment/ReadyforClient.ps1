@@ -304,7 +304,7 @@ $progress += 1
 $error_count = show-progress $progress $error_count
 
 ##Ready, Copy and rename listings from Ready for Client to Upload
-$listings = Get-ChildItem -Directory $client_path
+$listings = Get-ChildItem -Directory $client_path -Filter "Home*"
 listings-copy
 
 ##Stage 3: Comparing CS Export to Ready for Client -> Update Progress
