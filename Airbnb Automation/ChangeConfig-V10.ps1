@@ -23,7 +23,6 @@ $config_file = "$($current_loc)\config.txt"
 $ErrorActionPreference= 'silentlycontinue'
 
 ################################################################################################
-
 #### Read Config File ####
 function read_config {
   Set-Variable -Name "content" -Value (Get-Content -Path $config_file) -Scope Global
@@ -40,7 +39,6 @@ function read_config {
 ##
 
 ################################################################################################
-
 #### Main Menu Options ####
 
 function main-menu {
@@ -77,7 +75,20 @@ function main-menu {
 }
 
 ################################################################################################
+#### Ending Menu Options ####
+function extra_menu {
+  $in = Read-Host "Would you like to do something else [Y/N]?"
+  If (($in -eq "y") -or ($in -eq "Y")) {
+    "`r"
+    read_config
+    main-menu
+  } Else {
+    Write-Host "Good Bye!" -ForegroundColor Yellow
+    Exit
+  }
+}
 
+################################################################################################
 #### Chane Credentials Menu Options ####
 
 function change-credentials {
@@ -98,19 +109,77 @@ function change-credentials {
   "`r `n `r"
   Write-Host "Credentials Updated Successfully" -ForegroundColor Green
   "`r"
-  $in = Read-Host "Would you like to do something else [Y/N]?"
-  If (($in -eq "y") -or ($in -eq "Y")) {
-    "`r"
-    read_config
-    main-menu
-  } Else {
-    Write-Host "Good Bye!" -ForegroundColor Yellow
-    Exit
-  }
+  extra_menu
 }
 
 ################################################################################################
+#### Do Change function Options ####
 
+function do_change($n) {
+  if ($n -eq 1){
+    Write-Host "Current CSV Download Path: $($csv_loc)"
+    $new_csv_loc = Read-Host "New CSV Download Path"
+    $reg_csv_loc = [Regex]::Escape($csv_loc)
+    ## Saving to config file
+    $replacment = $replacment -replace "csv_loc;$($reg_csv_loc)","csv_loc;$($new_csv_loc)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 2) {
+    Write-Host "Current Ready for Client Path: $($client_path)"
+    $new_client_path = Read-Host "New Ready for Client Path"
+    $reg_client_path = [Regex]::Escape($client_path)
+    ## Saving to config file
+    $replacment = $replacment -replace "client_path;$($reg_client_path)","client_path;$($new_client_path)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 3) {
+    Write-Host "Current Upload Folder Path: $($upload_path)"
+    $new_upload_path = Read-Host "New Upload Path"
+    $reg_upload_path = [Regex]::Escape($upload_path)
+    ## Saving to config file
+    $replacment = $replacment -replace "upload_path;$($reg_upload_path)","upload_path;$($new_upload_path)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 4) {
+    Write-Host "Current Delivered Path: $($archive_path)"
+    $new_archive_path = Read-Host "New Delivered Path"
+    $reg_archive_path = [Regex]::Escape($archive_path)
+    ## Saving to config file
+    $replacment = $replacment -replace "archive_path;$($reg_archive_path)","archive_path;$($new_archive_path)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 5) {
+    Write-Host "Current Massupdater Destination: $($massupdater)"
+    $new_massupdater = Read-Host "New Massupdater Destination"
+    $reg_massupdater = [Regex]::Escape($massupdater)
+    ## Saving to config file
+    $replacment = $replacment -replace "massupdater;$($reg_massupdater)","massupdater;$($new_massupdater)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 6) {
+    Write-Host "Current Log Files Destination: $($log_dir)"
+    $new_log_dir = Read-Host "New Log Files Destination"
+    $reg_log_dir = [Regex]::Escape($log_dir)
+    ## Saving to config file
+    $replacment = $replacment -replace "log_dir;$($reg_log_dir)","log_dir;$($new_log_dir)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 7) {
+    Write-Host "Current CS CSV Export Link: $($export_link)"
+    $new_export_link = Read-Host "New CS CSV Export Link"
+    $reg_export_link = [Regex]::Escape($export_link)
+    ## Saving to config file
+    $replacment = $replacment -replace "export_link;$($reg_export_link)","export_link;$($new_export_link)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 8) {
+    Write-Host "Current Massupdater Upload Link: $($cs_upload)"
+    $new_cs_upload = Read-Host "New Massupdater Upload Link"
+    $reg_cs_upload = [Regex]::Escape($cs_upload)
+    ## Saving to config file
+    $replacment = $replacment -replace "cs_upload;$($reg_cs_upload)","cs_upload;$($new_cs_upload)"
+    Set-Content -Path $config_file -Value $replacment
+  }
+  "`r `n `r"
+  Write-Host "Path Changes Updated Successfully" -ForegroundColor Green
+  "`r"
+  extra_menu
+}
+
+################################################################################################
 #### Chane Paths Menu Options ####
 
 function change-path {
@@ -134,7 +203,19 @@ function change-path {
   Write-Host "[8] : " -ForegroundColor Green -NoNewline
   Write-Host "Massupdater Upload Link"
   "`r"
-  $in = Read-Host "Input your option"
+  ##
+  $flag = 8
+  While ($flag -eq 8){
+    $in = Read-Host "Input your option"
+    if (($in -le 8) -and ($in -gt 0)){
+      $flag = 0
+      do_change $in
+    }
+    Else {
+      "`r"
+      Write-Host "Error: Please type in an int between 1 to 8" -ForegroundColor Red
+    }
+  }
 }
 
 ################################################################################################

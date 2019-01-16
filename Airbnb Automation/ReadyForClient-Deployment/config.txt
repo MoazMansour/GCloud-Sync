@@ -8,4 +8,3 @@ log_dir;C:\Users\Blink Workstation\Downloads
 username;moaz.mansour@blink.la
 password;TmFubmFzJlpvenphMTgwMQ==
 cs_upload;https://cs.blink.la/photosets/update/26/63
-
