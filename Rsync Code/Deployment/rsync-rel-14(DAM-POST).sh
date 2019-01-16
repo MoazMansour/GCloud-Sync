@@ -24,7 +24,7 @@
 #! /bin/bash
 
 EVENTS="CREATE,DELETE,MOVED_TO,MOVED_FROM"          # specifying kind of events to be monitored
-bucket="gs://dam-porduction/"             				  # Bucket path
+bucket="gs://dam-production/"             				  # Bucket path
 g_root="Post-Production/" 							            # root folder subject to change on the cloud
 l_root="/dam-postproduction/"							          # root folder subject to change on the local server
 g_trash="Trash/"                                    # Trash path on the cloud bucket
@@ -140,6 +140,6 @@ do
   printf "CHANGE LOG: $line\n"                                                       #print recevied message on screen
   proc_control&
   callback "$line"&                                                                  #call the callback function
-done< <(inotifywait -e "$EVENTS" -m -r --timefmt '%H:%M' --format '%w %T %D %e %f' "$l_root")
+done< <(inotifywait -e "$EVENTS" -m -r --timefmt '%H:%M %m-%d-%y' --format '%w %T %e %f' "$l_root")
 
 #############################################

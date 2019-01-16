@@ -103,6 +103,9 @@ def callback(message):
 	       elif(key == "objectId"):                                                                # store path and filename
 			   object = value
 			   print("ObjectID: "+object)
+		   elif(key == "eventTime"):
+			   time = value
+			   print("Event Time: "+time)
 #####
 	message.ack()                                                                                  # Sends ack notification to google that message gas been received
 
