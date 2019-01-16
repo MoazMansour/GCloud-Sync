@@ -26,7 +26,7 @@
 EVENTS="CREATE,DELETE,MOVED_TO,MOVED_FROM"          # specifying kind of events to be monitored
 bucket="gs://dam-porduction/"             				  # Bucket path
 g_root="Post-Production/" 							            # root folder subject to change on the cloud
-l_root="/dam-postprodcution/"							          # root folder subject to change on the local server
+l_root="/dam-postproduction/"							          # root folder subject to change on the local server
 g_trash="Trash/"                                    # Trash path on the cloud bucket
 l_trash="$l_root@Recycle/"                          # Trash path on the local server
 proc=0                                              # counter to control number of running procceses
@@ -108,7 +108,7 @@ function callback() {
   path="$path/"
   folder=${path##*"$l_root"}                                                         # Exclduing the root folder "rsync-test" from path for sync purposes
   rest=${line##*/}                                                                   # reading the rest of the message except the path
-  read hour event file <<<"${rest}"                                                  # reading the change_time event_type and subjected obiect of change
+  read hour date event file <<<"${rest}"                                                  # reading the change_time event_type and subjected obiect of change
 
   #####
   # Check if it was a local or remote change to run sync
@@ -140,6 +140,6 @@ do
   printf "CHANGE LOG: $line\n"                                                       #print recevied message on screen
   proc_control&
   callback "$line"&                                                                  #call the callback function
-done< <(inotifywait -e "$EVENTS" -m -r --timefmt '%H:%M' --format '%w %T %e %f' "$l_root")
+done< <(inotifywait -e "$EVENTS" -m -r --timefmt '%H:%M' --format '%w %T %D %e %f' "$l_root")
 
 #############################################
