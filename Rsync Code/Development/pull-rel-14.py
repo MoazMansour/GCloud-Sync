@@ -79,7 +79,7 @@ def run_sync(path,dir,event,file):
 		if event == "OBJECT_FINALIZE":                                                                	# checks if folder has been created
 			call(["mkdir","-p",l_root+dir])                                                             # creates the new folder and all its parents if needed
 			call(["cp","-P","dummy",l_root+dir+"/.initate"])
-			call(["cp","-P","dummy",bucket+g_root+dir+"/.initate"])
+			call(["gsutil","-m","cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":                                                                	# checks if folder has been deleted
 			f = open(cloud_log,"a")
 			f.write(dir+"| ")
@@ -99,10 +99,13 @@ def callback(message):
 	       #print('{}: {}'.format(key, value))
 	       if(key == "eventType"):                                                                 # store event type
 			   event = value
-			   print ("Eventttpe: "+event)
+			   print ("Eventtype: "+event)
 	       elif(key == "objectId"):                                                                # store path and filename
 			   object = value
 			   print("ObjectID: "+object)
+		   elif(key == "eventTime"):
+			   time = value
+			   print("Event Time: "+time+"\n")
 #####
 	message.ack()                                                                                  # Sends ack notification to google that message gas been received
 
@@ -113,6 +116,9 @@ def callback(message):
 	path = object[psplit:fsplit]                                                                   # Assigning path to a variable
 	dir = path[:-1]                                                                                # excluding last "/" from path
 #####
+#Exclude .gstmp files
+	if (file.find(".gstmp") != -1):
+		return
 
 # Check if the file source was NAS
 	if event == "OBJECT_FINALIZE":

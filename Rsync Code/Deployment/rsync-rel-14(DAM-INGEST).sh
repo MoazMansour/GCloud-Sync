@@ -55,8 +55,8 @@ function run_sync {
   if [[ $event == *"ISDIR"* ]]; then                                                        # check directory change
     if [[ $event == *"CREATE"* ]]; then                                                     # check creating types of changes
       proc_control&
-      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"
-      gsutil -m cp -P dummy "$l_root$folder$file/.initate"                                  # creates a dummy file to create a folder on the cloud
+      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"                           # creates a dummy file to create a folder on the cloud
+      cp -P dummy "$l_root$folder$file/.initate"
       proc=$(( proc-1 ))
       trap "kill 0" EXIT
     else
@@ -103,12 +103,10 @@ function run_sync {
 ######
 
 function callback() {
-  line="$1"                                                                          # Passing on line info to the callback function
-  path=${line%/*}                                                                    # Parsing the path variable from the change message
-  path="$path/"
+  path="$1"                                                                          # Passing on line info to the callback function
+  file="$2"
   folder=${path##*"$l_root"}                                                         # Exclduing the root folder "rsync-test" from path for sync purposes
-  rest=${line##*/}                                                                   # reading the rest of the message except the path
-  read hour date event file <<<"${rest}"                                                  # reading the change_time event_type and subjected obiect of change
+  event="$3"
 
   #####
   # Check if it was a local or remote change to run sync
@@ -120,10 +118,10 @@ function callback() {
   fi
   else
     if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then             # check if it was a deletion
-      read log_file< <(grep -w "$cloud_log" -e "$folder$file")                    # check if the deletion was performed by the cloud
-      if echo "$log_file" | grep -q "$folder$file"; then
-        printf "Deletion performed by GCloud\n"
-        sed -i 's,'"$folder$file"', ,g' "$cloud_log"                                  # removes the file path from the cloud deletion log
+      read log_file< <(grep -w "$cloud_log" -e "$folder$file|")                        # check if the deletion was performed by the cloud
+      if echo "$log_file" | grep -q "$folder$file|"; then
+        printf "\nDeletion performed by GCloud\n\n"
+        python replace.py "$cloud_log" "$folder$file|"                                 # removes the file path from the cloud deletion log
       else
         proc_control&
         run_sync "$path" "$folder" "$event" "$file"&                                  # run the sync function
@@ -137,9 +135,15 @@ function callback() {
 }
 while read -r line
 do
-  printf "CHANGE LOG: $line\n"                                                       #print recevied message on screen
+  [[ $line == *"@Recycle"* ]] && continue                                            # Skip synchronizing @Recycle folder
+  path=${line%/*}                                                                    # Parsing the path variable from the change message
+  path="$path/"
+  rest=${line##*/}                                                                   # reading the rest of the message except the path
+  read hour date event file <<<"${rest}"                                             # reading the change_time event_type and subjected obiect of change
+  [[ $file == "."* ]] && continue                                            # Skip synchronizing hidden files
+  printf "CHANGE LOG: $date $hour $event $path$file\n"                               # print recevied message on screen
   proc_control&
-  callback "$line"&                                                                  #call the callback function
+  callback "$path" "$file" "$event"&                                                 # call the callback function
 done< <(inotifywait -e "$EVENTS" -m -r --timefmt '%H:%M %m-%d-%y' --format '%w %T %e %f' "$l_root")
 
 #############################################
