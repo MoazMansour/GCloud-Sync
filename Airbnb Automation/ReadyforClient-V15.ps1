@@ -1,5 +1,5 @@
 ###############################################################################
-# NAME:      ReadyforClient.ps1
+# NAME:      ReadyforClient-V15.ps1
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:    moaz.mansour@blink.la
 # DATE:      12/21/2018
@@ -60,9 +60,9 @@ $listings_list = @()
 $tracker_err_list = @()
 $cover_err_list = @()
 $delivered_list = @()
+$update_list = @()
 $listing_count = @{}
 #count number of errors for reporting
-$total_errors = 0
 $tracker_err = 0
 $cover_err = 0
 $delivered = 0
@@ -195,14 +195,6 @@ function log-count {
 function log-error {
     Set-Content -path $error_log -Value ">>>Delivery Check Errors Log<<< `r`n"
     Add-Content -path $error_log -Value "_________________________________"
-    Add-Content -path $error_log -Value ">>>Total Number of Errors: $($total_errors)"
-    Add-Content -path $error_log -Value "_________________________________"
-    Add-Content -path $error_log -Value "`r"
-    Add-Content -path $error_log -Value ">Missing on Tracker: $($tracker_err)"
-    Add-Content -path $error_log -Value "_________________________________"
-    Add-Content -path $error_log -Value $tracker_err_list
-    Add-Content -path $error_log -Value "_________________________________"
-    Add-Content -path $error_log -Value "`r"
     Add-Content -path $error_log -Value ">Missing Covers: $($cover_err)"
     Add-Content -path $error_log -Value "_________________________________"
     Add-Content -path $error_log -Value $cover_err_list
@@ -220,11 +212,15 @@ function log-delivery {
     Add-Content -path $del_log -Value ">Total Delivered: $($delivered)"
     Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value "`r"
-    Add-Content -path $del_log -Value ">List of Listings:"
+    Add-Content -path $del_log -Value ">Updated on Tracker: $($update_list.Count)"
     Add-Content -path $del_log -Value "_________________________________"
-    Add-Content -path $del_log -Value $delivered_list
+    Add-Content -path $del_log -Value $update_list
     Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value "`r"
+    Add-Content -path $del_log -Value ">Missing on Tracker: $($tracker_err)"
+    Add-Content -path $del_log -Value "_________________________________"
+    Add-Content -path $del_log -Value $tracker_err_list
+    Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value ">>>>End of file :)"
 }
 
@@ -232,11 +228,11 @@ function log-delivery {
 
 #### MassUpdater Output File ####
 function massupdater {
-    $header = [PSCustomObject] @{external_id = $delivered_list[0]; status = 'Sent to client'}
+    $header = [PSCustomObject] @{external_id = $update_list[0]; status = 'Sent to client'}
     $header | Export-Csv -Path $massupdater -NoTypeInformation
     $i = 1
-    While ( $i -lt $delivered_list.Count) {
-        $content = [PSCustomObject] @{external_id = $delivered_list[$i]; status = 'Sent to client'}
+    While ( $i -lt $update_list.Count) {
+        $content = [PSCustomObject] @{external_id = $update_list[$i]; status = 'Sent to client'}
         $content | Export-Csv -Path $massupdater -Append -NoTypeInformation
         $i += 1
     }
@@ -378,11 +374,18 @@ Foreach ($folder in $folders) {
 
 ##Final count of ready for delivery and accumulating errors
 $delivered = $delivered_list.Count
-$total_errors = $tracker_err + $cover_err
 
 ##Stage 5: Write Log files -> Update Progress
 $progress += 1
 $error_count = show-progress $progress $error_count
+
+##Create the update list to contain "- RAW" or "- JPEG"
+Foreach ($id in $delivered_list) {
+    if($SetID -like "$id*") {
+        $update_item = $SetID -like "$id*"
+        $update_list += $update_item
+    }
+}
 
 ##Write log files
 log-delivery

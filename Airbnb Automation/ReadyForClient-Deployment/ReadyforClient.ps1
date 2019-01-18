@@ -1,4 +1,4 @@
-﻿###############################################################################
+###############################################################################
 # NAME:      ReadyforClient.ps1
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:    moaz.mansour@blink.la
@@ -45,14 +45,6 @@ $missing_covers = "$($upload_path)\Missing Covers"
 $massupdater_file = "MassUpdater_$($csv_date).csv"
 $massupdater = "$($massupdater)\$($massupdater_file)"
 
-#$client_path = "Z:\Auto test"
-#$upload_path = "Y:\Client\Airbnb\Plus\00 - DARYL Pull\Auto Test"
-#$archive_path = "Y:\Client\Airbnb\Plus\Delivered Test"
-#$mass_uploader = "C:\Users\Blink Workstation\Desktop\automation\Airbnb Automation\MassUploader-V10.py"
-
-#Export Link
-#$export_link = "https://cs.blink.la/photosets/26/63/export.csv?media_type=&market=&vendor_id=&general_status=&status=&status%5B%5D=90000&client_approval=&vendor_status=&reshoot_reason=&qc_assigned_to=&editorial_assigned_to=&crop_cover_assigned_to=&feedback_assigned_to=&technical_assigned_to=&sent_to_client_from=&sent_to_client_to=&feedback_date_from=&feedback_date_to=&sequencing_completed_from=&sequencing_completed_to=&received_from_client_from=&received_from_client_to=&received_from_vendor_from=&received_from_vendor_to=&sent_to_vendor_from=&sent_to_vendor_to=&feedback_completed_r1_from=&feedback_completed_r1_to=&feedback_completed_r2_from=&feedback_completed_r2_to=&require_review_by_client_from=&require_review_by_client_to=&qc_qm_date_complete_from=&qc_qm_date_complete_to=&created_from=&created_to=&modified_from=&modified_to=&range_field=&range_value=&sort=&direction="
-
 ##Where to put the log files
 $error_log = "$($log_dir)\error_log.txt"    #defining the error log path
 $del_log = "$($log_dir)\delivery_log.txt"      #defining the error log path
@@ -68,9 +60,9 @@ $listings_list = @()
 $tracker_err_list = @()
 $cover_err_list = @()
 $delivered_list = @()
+$update_list = @()
 $listing_count = @{}
 #count number of errors for reporting
-$total_errors = 0
 $tracker_err = 0
 $cover_err = 0
 $delivered = 0
@@ -145,7 +137,7 @@ function listings-copy {
     Foreach ($listing in $listings) {
         $listing_id = extract-id $listing
         $listings_list += $listing_id
-        $source = "$($client_path)\$($listing)\Export\*"
+        $source = "$($client_path)\$($listing)\Export*\*"
         $dest = "$($upload_path)\Retouched JPEGs ($($listing_id))\"
         if (-Not (Test-Path $dest -PathType Container)) {
             New-Item -ItemType directory -Path $dest | Out-Null
@@ -203,14 +195,6 @@ function log-count {
 function log-error {
     Set-Content -path $error_log -Value ">>>Delivery Check Errors Log<<< `r`n"
     Add-Content -path $error_log -Value "_________________________________"
-    Add-Content -path $error_log -Value ">>>Total Number of Errors: $($total_errors)"
-    Add-Content -path $error_log -Value "_________________________________"
-    Add-Content -path $error_log -Value "`r"
-    Add-Content -path $error_log -Value ">Missing on Tracker: $($tracker_err)"
-    Add-Content -path $error_log -Value "_________________________________"
-    Add-Content -path $error_log -Value $tracker_err_list
-    Add-Content -path $error_log -Value "_________________________________"
-    Add-Content -path $error_log -Value "`r"
     Add-Content -path $error_log -Value ">Missing Covers: $($cover_err)"
     Add-Content -path $error_log -Value "_________________________________"
     Add-Content -path $error_log -Value $cover_err_list
@@ -228,11 +212,15 @@ function log-delivery {
     Add-Content -path $del_log -Value ">Total Delivered: $($delivered)"
     Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value "`r"
-    Add-Content -path $del_log -Value ">List of Listings:"
+    Add-Content -path $del_log -Value ">Updated on Tracker: $($update_list.Count)"
     Add-Content -path $del_log -Value "_________________________________"
-    Add-Content -path $del_log -Value $delivered_list
+    Add-Content -path $del_log -Value $update_list
     Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value "`r"
+    Add-Content -path $del_log -Value ">Missing on Tracker: $($tracker_err)"
+    Add-Content -path $del_log -Value "_________________________________"
+    Add-Content -path $del_log -Value $tracker_err_list
+    Add-Content -path $del_log -Value "_________________________________"
     Add-Content -path $del_log -Value ">>>>End of file :)"
 }
 
@@ -240,11 +228,11 @@ function log-delivery {
 
 #### MassUpdater Output File ####
 function massupdater {
-    $header = [PSCustomObject] @{external_id = $delivered_list[0]; status = 'Sent to client'}
+    $header = [PSCustomObject] @{external_id = $update_list[0]; status = 'Sent to client'}
     $header | Export-Csv -Path $massupdater -NoTypeInformation
     $i = 1
-    While ( $i -lt $delivered_list.Count) {
-        $content = [PSCustomObject] @{external_id = $delivered_list[$i]; status = 'Sent to client'}
+    While ( $i -lt $update_list.Count) {
+        $content = [PSCustomObject] @{external_id = $update_list[$i]; status = 'Sent to client'}
         $content | Export-Csv -Path $massupdater -Append -NoTypeInformation
         $i += 1
     }
@@ -270,8 +258,24 @@ function Download-CSV {
         Write-Host "CSV File Downloaded"
     } Else {
         Write-Host "Error: Please check internet connection and retry" -ForegroundColor Red
-        Exit
+        $flag = 8
+        While ($flag -eq 8){
+          $in = Read-Host "Retry [Y/N]?"
+          if (($in -eq "Y") -or ($in -eq "y")){
+            $flag = 0
+            "`r"
+            Download-CSV
+          } ElseIf (($in -eq "N") -or ($in -eq "n")){
+            $flag = 0
+            "`r"
+            Write-Host "Good Bye!" -ForegroundColor Yellow
+            Exit
+          } Else {
+            "`r"
+            Write-Host "Error: Please type in Y or N only" -ForegroundColor Red
+          }
     }
+  }
 }
 
 
@@ -370,11 +374,18 @@ Foreach ($folder in $folders) {
 
 ##Final count of ready for delivery and accumulating errors
 $delivered = $delivered_list.Count
-$total_errors = $tracker_err + $cover_err
 
 ##Stage 5: Write Log files -> Update Progress
 $progress += 1
 $error_count = show-progress $progress $error_count
+
+##Create the update list to contain "- RAW" or "- JPEG"
+Foreach ($id in $delivered_list) {
+    if($SetID -like "$id*") {
+        $update_item = $SetID -like "$id*"
+        $update_list += $update_item
+    }
+}
 
 ##Write log files
 log-delivery
