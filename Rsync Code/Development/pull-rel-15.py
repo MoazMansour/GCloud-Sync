@@ -30,34 +30,51 @@ import logging
 
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719"                                                         # The project I am assigned to on Gcloud
-subscription_name = "DeliverSub"		                 		                                # Pull subscription channel created to pull all object changes messages
-bucket = "gs://dam-production/"                                                                 # Bucket path
-g_root = "Deliverables/"		                                	                            # root folder subject to change on the cloud
-l_root = "/dam-deliverable/"		                                  	                        # root folder subject to change on the local server
+subscription_name = "IngestSub"		                 		                                        # Pull subscription channel created to pull all object changes messages
+bucket = "gs://dam-production/"                                                               # Bucket path
+g_root = "Ingest/"		                                	                                    # root folder subject to change on the cloud
+l_root = "/dam-ingest/"		                                  	                                # root folder subject to change on the local server
 g_trash= "Trash/"                                                                               # Trash path on the cloud bucket
 l_trash= l_root+"@Recycle/" 	                                                                # Trash path on the local server
-max_proc = 5                  	                                                                # setting maximum number of messages to be processed
-cloud_log = "/home/blink/programs/cloud_del"  													# Path to cloud deleting log
-NAS_log = "/home/blink/programs/NAS_del" 														# Path to NAS deleting log
+max_proc = 10                  	                                                                # setting maximum number of messages to be processed
+g_del_log = "/home/blink/programs/logs/cloud_del"  													# Path to cloud deleting log
+l_del_log = "/home/blink/programs/logs/NAS_del" 														# Path to NAS deleting log
+g_add_log = "/home/blink/programs/logs/cloud_add"  													# Path to cloud addition log
+l_add_log = "/home/blink/programs/logs/NAS_add" 														# Path to NAS addition log
 
 subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_name)
 
 ###############################################
-#Check delete function
-def check_delete(path,file):
-	f = open(NAS_log,"r")                                                					   # Open and reads the NAS deletion log file
+#Check owner function
+def check_owner(change_type,change_item):
+	if (change_type == "DELETE"):
+		log_check = l_del_log
+	else:
+		log_check = l_add_log
+	f = open(log_check,"r")                                                					   # Open and reads the NAS deletion log file
 	change_check = f.read()
 	f.close()
-	if (change_check.find(path+file+"|") != -1):                              					   # Check if the deletion was performed by NAS
-		print("Deletion Performed by NAS")
-		change_check = change_check.replace(path+file+"|"," ")                                  	# Removes the record from the log file
-		f = open(NAS_log,"w")
+	if (change_check.find(change_item+"|") != -1):                              					   # Check if the deletion was performed by NAS
+		print(change_type+" Action Performed by NAS")
+		change_check = change_check.replace(change_item+"|"," ")                                  	# Removes the record from the log file
+		f = open(log_check,"w")
 		f.write(change_check)
 		f.close()
 		return False                                                         				   # Return false to avoid deleting
 	else:
-		return True                                                          				   # Returne true to indicate that it is local action and deletion is required
+		return True                                                        				   # Returne true to indicate that it is local action and deletion is required
+
+###############################################
+#Write log function
+def log_change(change_type,change_item):
+	if (change_type == "DELETE"):
+		log_check = g_del_log
+	else:
+		log_check = g_add_log
+	f = open(log_check,"a")
+	f.write(change_item+"| ")
+	f.close()
 
 ###############################################
 #Main synchronization function
@@ -65,25 +82,23 @@ def run_sync(path,dir,event,file):
 ### Check the type of change and act upon it
 	if file:                                                                                       		# checks if the action was taken on a file object (which is mostly the case with gcloud
 		if event == "OBJECT_FINALIZE":                                                                	# if file has been created or modified
+			log_change("CREATE",path+file)
 			call(["mkdir","-p",l_root+dir])                                                             # assures that the target directory (full path) exists on NAS
 			call(["gsutil","-m","cp",bucket+g_root+path+file,l_root+path+file])                         # copies the changed/created file to its destination on NAS
 		elif event == "OBJECT_DELETE":                                                                	# checks if file has been deleted or renamed
-			f = open(cloud_log,"a")
-			f.write(path+file+"| ")
-			f.close()
+			log_change("DELETE",path+file)
 			call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
 			call(["mv",l_root+path+file,l_trash+path+file])                                             # removes file from NAS
 			call(["find",l_root+path,"-type","d","-empty","-delete"])                                   # if emptied removes the target folder and its empty subordinates to comply with gcloud object logic
 ###
 	else:                                                                                         		# if the file is empty it means it was a folder action (usually a new empty folder has been created or deleted)
 		if event == "OBJECT_FINALIZE":                                                                	# checks if folder has been created
+			log_change("CREATE",dir)
 			call(["mkdir","-p",l_root+dir])                                                             # creates the new folder and all its parents if needed
 			call(["cp","-P","dummy",l_root+dir+"/.initate"])
 			call(["gsutil","-m","cp","-P","dummy",bucket+g_root+dir+"/.initate"])
 		elif event == "OBJECT_DELETE":                                                                	# checks if folder has been deleted
-			f = open(cloud_log,"a")
-			f.write(dir+"| ")
-			f.close()
+			log_change("DELETE",dir)
 			call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
 			call(["find",l_root+path,"-type","d","-empty","-exec","mv","-f",l_root+dir,l_trash+dir])    # removes the target folder and its empty subordinates to comply with gcloud object logic
 #### End of object changes actions
@@ -122,12 +137,13 @@ def callback(message):
 
 # Check if the file source was NAS
 	if event == "OBJECT_FINALIZE":
-		change_check = check_output(["gsutil","ls","-L",bucket+g_root+path+file])
-		if (change_check.find('posix-uid:') == -1):                          					   # check file metadata to see if it wasn't uploaded via NAS
+		logging.basicConfig()
+		flag = check_owner("CREATE",path+file)
+		if (flag):                          					   # check file metadata to see if it wasn't uploaded via NAS
 			run_sync(path,dir,event,file)
 	elif event == "OBJECT_DELETE":
 		logging.basicConfig()
-		flag = check_delete(path,file)
+		flag = check_owner("DELETE",path+file)
 		if (flag):
 			run_sync(path,dir,event,file)
 

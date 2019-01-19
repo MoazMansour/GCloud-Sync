@@ -136,6 +136,7 @@ function callback() {
 while read -r line
 do
   [[ $line == *"@Recycle"* ]] && continue                                            # Skip synchronizing @Recycle folder
+  [[ $line == *".gstmp"* ]] && continue                                            # Skip synchronizing @Recycle folder
   path=${line%/*}                                                                    # Parsing the path variable from the change message
   path="$path/"
   rest=${line##*/}                                                                   # reading the rest of the message except the path

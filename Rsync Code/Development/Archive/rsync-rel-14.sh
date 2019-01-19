@@ -31,9 +31,10 @@ g_trash="Trash/"                                    # Trash path on the cloud bu
 l_trash="$l_root@Recycle/"                          # Trash path on the local server
 proc=0                                              # counter to control number of running procceses
 max_proc=7                                          # set max number of allowed proccesses at once
-cloud_log="/home/blink/programs/cloud_del"  				# Path to cloud deleting log
-NAS_log="/home/blink/programs/NAS_del"  						# Path to NAS deleting log
-
+g_del_log="/home/blink/programs/logs/cloud_del"  		# Path to cloud deleting log
+l_del_log="/home/blink/programs/logs/NAS_del"  			# Path to NAS deleting log
+g_add_log="/home/blink/programs/logs/cloud_add"     # Path to cloud adding log
+l_add_log="/home/blink/programs/logs/NAS_add"       # Path to NAS adding log
 #############################################
 #Queue function
 function proc_control {
@@ -136,6 +137,7 @@ function callback() {
 while read -r line
 do
   [[ $line == *"@Recycle"* ]] && continue                                            # Skip synchronizing @Recycle folder
+  [[ $line == *".gstmp"* ]] && continue                                            # Skip synchronizing @Recycle folder
   path=${line%/*}                                                                    # Parsing the path variable from the change message
   path="$path/"
   rest=${line##*/}                                                                   # reading the rest of the message except the path

@@ -33,7 +33,7 @@ project_id = "production-backup-194719"                                         
 subscription_name = "PostProductionSub"	                 		                                # Pull subscription channel created to pull all object changes messages
 bucket = "gs://dam-production/"                                                                 # Bucket path
 g_root = "Post-Production/"		                                	                            # root folder subject to change on the cloud
-l_root = "/dam-postprodcution/"		                                  	                        # root folder subject to change on the local server
+l_root = "/dam-postproduction/"		                                  	                        # root folder subject to change on the local server
 g_trash= "Trash/"                                                                               # Trash path on the cloud bucket
 l_trash= l_root+"@Recycle/" 	                                                                # Trash path on the local server
 max_proc = 10                 	                                                                # setting maximum number of messages to be processed
@@ -49,9 +49,9 @@ def check_delete(path,file):
 	f = open(NAS_log,"r")                                                					   # Open and reads the NAS deletion log file
 	change_check = f.read()
 	f.close()
-	if (change_check.find(path+file) != -1):                              					   # Check if the deletion was performed by NAS
+	if (change_check.find(path+file+"|") != -1):                              					   # Check if the deletion was performed by NAS
 		print("Deletion Performed by NAS")
-		change_check = change_check.replace(path+file," ")                                  	# Removes the record from the log file
+		change_check = change_check.replace(path+file+"|"," ")                                  	# Removes the record from the log file
 		f = open(NAS_log,"w")
 		f.write(change_check)
 		f.close()

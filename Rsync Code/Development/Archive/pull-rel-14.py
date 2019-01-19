@@ -49,9 +49,9 @@ def check_delete(path,file):
 	f = open(NAS_log,"r")                                                					   # Open and reads the NAS deletion log file
 	change_check = f.read()
 	f.close()
-	if (change_check.find(path+file) != -1):                              					   # Check if the deletion was performed by NAS
+	if (change_check.find(path+file+"|") != -1):                              					   # Check if the deletion was performed by NAS
 		print("Deletion Performed by NAS")
-		change_check = change_check.replace(path+file," ")                                  	# Removes the record from the log file
+		change_check = change_check.replace(path+file+"|"," ")                                  	# Removes the record from the log file
 		f = open(NAS_log,"w")
 		f.write(change_check)
 		f.close()

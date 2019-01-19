@@ -25,14 +25,16 @@
 
 EVENTS="CREATE,DELETE,MOVED_TO,MOVED_FROM"          # specifying kind of events to be monitored
 bucket="gs://dam-production/"              				  # Bucket path
-g_root="Ingest/" 							                      # root folder subject to change on the cloud
-l_root="/dam-ingest/"							                  # root folder subject to change on the local server
+g_root="Ingest/" 												            # root folder subject to change on the cloud
+l_root="/dam-ingest/"											          # root folder subject to change on the local server
 g_trash="Trash/"                                    # Trash path on the cloud bucket
 l_trash="$l_root@Recycle/"                          # Trash path on the local server
 proc=0                                              # counter to control number of running procceses
-max_proc=5                                          # set max number of allowed proccesses at once
-cloud_log="/home/blink/programs/cloud_del"  				# Path to cloud deleting log
-NAS_log="/home/blink/programs/NAS_del"  						# Path to NAS deleting log
+max_proc=7                                          # set max number of allowed proccesses at once
+g_del_log="/home/blink/programs/logs/cloud_del"  		# Path to cloud deleting log
+l_del_log="/home/blink/programs/logs/NAS_del"  			# Path to NAS deleting log
+g_add_log="/home/blink/programs/logs/cloud_add"     # Path to cloud adding log
+l_add_log="/home/blink/programs/logs/NAS_add"       # Path to NAS adding log
 
 #############################################
 #Queue function
@@ -55,20 +57,22 @@ function run_sync {
   if [[ $event == *"ISDIR"* ]]; then                                                        # check directory change
     if [[ $event == *"CREATE"* ]]; then                                                     # check creating types of changes
       proc_control&
-      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"                           # creates a dummy file to create a folder on the cloud
+      echo -e "$(cat $l_add_log)$folder$file| " > $l_add_log
+      gsutil -m cp dummy "$bucket$g_root$folder$file/.initate"                           # creates a dummy file to create a folder on the cloud
       cp -P dummy "$l_root$folder$file/.initate"
       proc=$(( proc-1 ))
       trap "kill 0" EXIT
     else
       if [[ $event == *"MOVED_TO"* ]]; then
         proc_control&
-        gsutil -m rsync -r -P "$l_root$folder$file" "$bucket$g_root$folder$file"&
+        echo -e "$(cat $l_add_log)$folder$file| " > $l_add_log
+        gsutil -m rsync -r "$l_root$folder$file" "$bucket$g_root$folder$file"&
         proc=$(( proc-1 ))
         trap "kill 0" EXIT
       else
         if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then                # check deleting types of changes
           proc_control&
-          echo -e "$(cat $NAS_log)$folder$file| " > $NAS_log
+          echo -e "$(cat $l_del_log)$folder$file| " > $l_del_log
           gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"&    # remove folder recersuively from cloud
           proc=$(( proc-1 ))
           trap "kill 0" EXIT
@@ -79,13 +83,14 @@ function run_sync {
     #If change was not a directory change the below are the checks run per file change
     if [[ $event == "CREATE" ]] || [[ $event == "MOVED_TO" ]]; then                           # check creation types of changes
       proc_control&
+      echo -e "$(cat $l_add_log)$folder$file| " > $l_add_log
       gsutil -m cp -P "$path$file" "$bucket$g_root$folder$file"&
       proc=$(( proc-1 ))
       trap "kill 0" EXIT
     else
       if [[ $event == "DELETE" ]] || [[ $event == "MOVED_FROM" ]]; then                       # check deletion types of changes
         proc_control&
-        echo -e "$(cat $NAS_log)$folder$file| " > $NAS_log
+        echo -e "$(cat $l_del_log)$folder$file| " > $l_del_log
         gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"&       # delete only this specific file
         proc=$(( proc-1 ))
         trap "kill 0" EXIT
@@ -111,17 +116,22 @@ function callback() {
   #####
   # Check if it was a local or remote change to run sync
   if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                 # check if it was a create to get owner
-  uname="$(stat --format '%U' "$path$file")"                                          # extract owner of file
-  if [ "${uname}" = "root" ]; then                                                    # if root is owner then change was local
-    proc_control&
-    run_sync "$path" "$folder" "$event" "$file"&                                      # call the sync function
-  fi
+    log_check="$g_add_log"
+    read log_file< <(grep -w "$log_check" -e "$folder$file|")                        # check if the action was performed by the cloud
+    if echo "$log_file" | grep -q "$folder$file|"; then
+      printf "\nCreation performed by GCloud\n\n"
+      python replace.py "$log_check" "$folder$file|"                                 # removes the file path from the cloud deletion log
+    else
+      proc_control&
+      run_sync "$path" "$folder" "$event" "$file"&                                  # run the sync function
+    fi
   else
     if [[ $event == *"DELETE"* ]] || [[ $event == *"MOVED_FROM"* ]]; then             # check if it was a deletion
-      read log_file< <(grep -w "$cloud_log" -e "$folder$file|")                        # check if the deletion was performed by the cloud
+      log_check="$g_del_log"
+      read log_file< <(grep -w "$log_check" -e "$folder$file|")                        # check if the action was performed by the cloud
       if echo "$log_file" | grep -q "$folder$file|"; then
         printf "\nDeletion performed by GCloud\n\n"
-        python replace.py "$cloud_log" "$folder$file|"                                 # removes the file path from the cloud deletion log
+        python replace.py "$log_check" "$folder$file|"                                 # removes the file path from the cloud deletion log
       else
         proc_control&
         run_sync "$path" "$folder" "$event" "$file"&                                  # run the sync function
