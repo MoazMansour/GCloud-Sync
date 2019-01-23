@@ -26,9 +26,9 @@
 #! /bin/bash
 
 EVENTS="CREATE,MOVED_TO"                            # specifying kind of events to be monitored
-bucket="gs://dam-production/"              			# Bucket path
-g_root="Post-Production/" 												            # root folder subject to change on the cloud
-l_root="/dam-postproduction/"											          # root folder subject to change on the local server
+bucket="gs://dam-production/"              			    # Bucket path
+g_root="Post-Production/" 												  # root folder subject to change on the cloud
+l_root="/dam-postproduction/"											  # root folder subject to change on the local server
 g_trash="Trash/"                                    # Trash path on the cloud bucket
 l_trash="$l_root@Recycle/"                          # Trash path on the local server
 proc=0                                              # counter to control number of running procceses
