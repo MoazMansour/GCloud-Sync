@@ -93,12 +93,12 @@ def create_dir(new_dir):
 	print("[info] Created "+l_root+new_dir+"\n")				                                            # Log changes
 	log_change("CREATE",new_dir+"/.initiate") 	      	                                                    # Log the initiate file change to the cloud add log
 	log_change("LOCAL",new_dir+"/.initiate")    	                                                        # Log the initiate file change to the cloud add log
-	call(["cp","-P","dummy",l_root+new_dir+"/.initiate"])      	                                			# copies the initate file to the newly created directory
-	call(["gsutil","-m","cp","-P","dummy",bucket+g_root+new_dir+"/.initiate"])                  			# copies the initate file to the newly created directory
+	call(["cp","-P","dummy",l_root+new_dir+"/.initiate"])      	                                			# copies the initiate file to the newly created directory
+	call(["gsutil","-m","cp","-P","dummy",bucket+g_root+new_dir+"/.initiate"])                  			# copies the initiate file to the newly created directory
 	output = open(gsync_log,"a")
-	print("[info] Created "+l_root+new_dir+"/initate\n")				                                    # Log changes
+	print("[info] Created "+l_root+new_dir+"/initiate\n")				                                    # Log changes
 	output = open(gsync_log,"a")
-	print("[info] Created "+bucket+g_root+new_dir+"/initate\n")				                                # Log changes
+	print("[info] Created "+bucket+g_root+new_dir+"/initiate\n")				                                # Log changes
 
 ###############################################
 #Main synchronization function

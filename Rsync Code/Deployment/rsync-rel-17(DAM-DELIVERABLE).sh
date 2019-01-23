@@ -29,7 +29,7 @@
 EVENTS="CREATE,MOVED_TO,MOVED_FROM"                 # specifying kind of events to be monitored
 bucket="gs://dam-production/"              			# Bucket path
 g_root="Deliverables/" 												            # root folder subject to change on the cloud
-l_root="/dam-deliverbale/"											          # root folder subject to change on the local server
+l_root="/dam-deliverable/"											          # root folder subject to change on the local server
 g_trash="Trash/"                                    # Trash path on the cloud bucket
 l_trash="$l_root@Recycle/"                          # Trash path on the local server
 proc=0                                              # counter to control number of running procceses
@@ -61,12 +61,12 @@ function run_sync {
   if [[ $event == *"ISDIR"* ]]; then                                                                               # Check directory change
     if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                                            # Check creating types of changes
       proc_control&                                                                                                # Call the process control function
-      echo -e "$(cat $l_add_log)$folder$file/.initate| " > $l_add_log                                              # Write the change to the NAS log
-      echo -e "$(cat $g_add_log)$folder$file/.initate| " > $g_add_log                                              # Write the change to the cloud log to avoide overwriting
-      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initate"                                                  # Creates a dummy file to create a folder on the cloud
-      cp -P dummy "$l_root$folder$file/.initate"                                                                   # Copy the initiate file to the local server
-      printf "[info] Created $bucket$g_root$folder$file/.initate\n" | tee ./logs/rsync-log.txt                     # Log the copy process
-      printf "[info] Created $l_root$folder$file/.initate\n" | tee ./logs/rsync-log.txt                            # Log the copy process
+      echo -e "$(cat $l_add_log)$folder$file/.initiate| " > $l_add_log                                              # Write the change to the NAS log
+      echo -e "$(cat $g_add_log)$folder$file/.initiate| " > $g_add_log                                              # Write the change to the cloud log to avoide overwriting
+      gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initiate"                                                  # Creates a dummy file to create a folder on the cloud
+      cp -P dummy "$l_root$folder$file/.initiate"                                                                   # Copy the initiate file to the local server
+      printf "[info] Created $bucket$g_root$folder$file/.initiate\n" | tee ./logs/rsync-log.txt                     # Log the copy process
+      printf "[info] Created $l_root$folder$file/.initiate\n" | tee ./logs/rsync-log.txt                            # Log the copy process
       if [[ $event == *"MOVED_TO"* ]]; then
         printf "[info] Building Sync for $l_root$folder$file and $bucket$g_root$folder$file\n" | tee ./logs/rsync-log.txt                     # Log the sync process
         files="$l_root$folder$file/"*                                                                              # Read all files in the folder to be synced
