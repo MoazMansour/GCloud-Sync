@@ -148,6 +148,7 @@ function listings-copy {
         } -ArgumentList $source, $dest | Out-Null
         copy-progress $source $dest "copy"
     }
+    return $listings_list
 }
 
 ################################################################################################
@@ -309,7 +310,7 @@ $error_count = show-progress $progress $error_count
 
 ##Ready, Copy and rename listings from Ready for Client to Upload
 $listings = Get-ChildItem -Directory $client_path -Filter "Home*"
-listings-copy
+$listings_list= listings-copy
 
 ##Stage 3: Comparing CS Export to Ready for Client -> Update Progress
 $progress += 1
