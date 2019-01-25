@@ -219,6 +219,58 @@ function change-path {
 }
 
 ################################################################################################
+#### UI for Vendor Shipment Management ####
+# function pick_vendors {
+#   Write-Host "########################################################"
+#   Write-Host "################ Airbnb Vendor Shipping ################"
+#   Write-Host "########################################################"
+#   "`r `n `r `n `r"
+#
+#   Write-Host "Hi,"
+#   Write-Host "Welcome to the Airbnb Vendor Shipping tool designed by Blink Tech team"
+#   Write-Host "Today is $($current_date). we have 8 vendors so far how many would you deal with today?"
+#   #Which vendor teams we will be working with today?"
+#   Write-Host "Please type in all your inputs comma separated (eg. 1,4,5)"
+#   Write-Host "[1] : " -ForegroundColor Green -NoNewline
+#   Write-Host "Team 1 > Oodio"
+#   Write-Host "[2] : " -ForegroundColor Green -NoNewline
+#   Write-Host "Team 2 > "
+#   Write-Host "[3] : " -ForegroundColor Green -NoNewline
+#   Write-Host "Team 3 > "
+#   Write-Host "[4] : " -ForegroundColor Green -NoNewline
+#   Write-Host "Team 4 > "
+#   Write-Host "[5] : " -ForegroundColor Green -NoNewline
+#   Write-Host "Team 5 > "
+#   Write-Host "[6] : " -ForegroundColor Green -NoNewline
+#   Write-Host "Team 6 > Differential"
+#   Write-Host "[7] : " -ForegroundColor Green -NoNewline
+#   Write-Host "Team 7 > "
+#   Write-Host "[8] : " -ForegroundColor Green -NoNewline
+#   Write-Host "Team 8 > Blink India"
+#   "`r"
+#   $flag = 8
+#   While ($flag -eq 8){
+#     $in = Read-Host "Input your choice"
+#     if ($in -match ""){
+#       $flag = 0
+#       "`r"
+#       change-credentials
+#     } ElseIf ($in -eq 2){
+#       $flag = 0
+#       "`r"
+#       change-path
+#     } ElseIf ($in -eq 0) {
+#       "`r"
+#       Write-Host "Good Bye!" -ForegroundColor Yellow
+#       Exit
+#     } Else {
+#       "`r"
+#       Write-Host "Error: Please type in 1 or 2 only" -ForegroundColor Red
+#     }
+#
+# }
+
+################################################################################################
 
 ##Clear space for progress bar
 "`r `n `r `n `r"

@@ -59,6 +59,9 @@ $cover_err_list = @()
 $delivered_list = @()
 $update_list = @()
 $listing_count = @{}
+$team_paths = @{"Team 8 (Blink India)"="V:\Blink - India\00 - From HQ\";"Team 6 (Differential)" = "V:\Differential Imaging\To Differential";"Team 1 (Oodio)" = "V:\Oodio\To Oodio"}
+$vendor_teams = [ordered]@{"Team 8 (Blink India)"=0;"Team 6 (Differential)" = 0;"Team 1 (Oodio)" = 0}
+$ordered_listings = [ordered]@{}
 #count number of errors for reporting
 $tracker_err = 0
 $cover_err = 0
@@ -279,65 +282,109 @@ function Download-CSV {
 ################################################################################################
 
 #### UI for Vendor Shipment Management ####
-function pick_vendors {
+function assign_vendors {
   Write-Host "########################################################"
   Write-Host "################ Airbnb Vendor Shipping ################"
   Write-Host "########################################################"
   "`r `n `r `n `r"
 
   Write-Host "Hi,"
+  "`r"
   Write-Host "Welcome to the Airbnb Vendor Shipping tool designed by Blink Tech team"
-  Write-Host "Today is $($current_date). we have 8 vendors so far how many would you deal with today?"
-  #Which vendor teams we will be working with today?"
-  Write-Host "Please type in all your inputs comma separated (eg. 1,4,5)"
-  Write-Host "[1] : " -ForegroundColor Green -NoNewline
-  Write-Host "Team 1 > Oodio"
-  Write-Host "[2] : " -ForegroundColor Green -NoNewline
-  Write-Host "Team 2 > "
-  Write-Host "[3] : " -ForegroundColor Green -NoNewline
-  Write-Host "Team 3 > "
-  Write-Host "[4] : " -ForegroundColor Green -NoNewline
-  Write-Host "Team 4 > "
-  Write-Host "[5] : " -ForegroundColor Green -NoNewline
-  Write-Host "Team 5 > "
-  Write-Host "[6] : " -ForegroundColor Green -NoNewline
-  Write-Host "Team 6 > Differential"
-  Write-Host "[7] : " -ForegroundColor Green -NoNewline
-  Write-Host "Team 7 > "
-  Write-Host "[8] : " -ForegroundColor Green -NoNewline
-  Write-Host "Team 8 > Blink India"
+  "`r"
+  Write-Host "Today, the total number of sets ready for vendor is " -NoNewline
+  Write-Host "$($listings.count)." -ForegroundColor Yellow
+  Write-Host "Usually, the distribution looks like that:"
+  "`r"
+  ForEach ($team in $vendor_teams.Keys){
+      $output = '{0,-22} > {1,5}' -f $team, $vendor_teams[$team]
+      Write-Host "$($output) sets"
+  }
   "`r"
   $flag = 8
   While ($flag -eq 8){
-    $in = Read-Host "Input your choice"
-    if ($in -match ""){
+    Write-Host "Would you like to make any changes to the usual distribution " -ForegroundColor Green -NoNewline
+    $in = Read-Host "[Y/N]?"
+    if (($in -eq "Y") -or ($in -eq "y")) {
       $flag = 0
       "`r"
-      change-credentials
-    } ElseIf ($in -eq 2){
+      Write-Host "Ok, sure." -ForegroundColor Yellow
+      ForEach ($team in $($vendor_teams.Keys)) {$vendor_teams[$team] = 0}
+      "`r"
+      ForEach ($team in $($vendor_teams.keys)){
+          $sum = 0
+          ForEach ($key in $($vendor_teams.keys)) {$sum += $vendor_teams[$key]}
+          $left_sets = $listings.count-$sum
+          change_vendor $team $left_sets
+      }
+    } ElseIf (($in -eq "N") -or ($in -eq "n")){
       $flag = 0
       "`r"
-      change-path
-    } ElseIf ($in -eq 0) {
-      "`r"
-      Write-Host "Good Bye!" -ForegroundColor Yellow
-      Exit
+      Write-Host "Ok, Roger that!" -ForegroundColor Yellow
     } Else {
       "`r"
-      Write-Host "Error: Please type in 1 or 2 only" -ForegroundColor Red
+      Write-Host "Error: Please type in Y or N" -ForegroundColor Red
     }
-
+  }
 }
 
+################################################################################################
+#### Change Vendor Distribution ####
+function change_vendor {
+  param([string]$vendor,[int]$left)
+  Write-Host "We have $($left) sets left in ready for vendor"
+  $flag = 8
+  While ($flag -eq 8){
+    Write-Host "How many would you like to assign to " -ForegroundColor Green -NoNewline
+    $in = Read-Host "$($vendor)"
+    $value = [int]$in
+    if (($in -match '\d+')) {
+        if (($value -le $left) -and ($value -ge 0) ) {
+            $flag = 0
+            "`r"
+            $vendor_teams[$vendor] = $value
+            Write-Host "Great!" -ForegroundColor Yellow
+            "`r"
+        } Else {
+            "`r"
+            Write-Host "Oops, this is not compatible to what we have left. Please retry!" -ForegroundColor Red
+        }
+    } Else {
+      "`r"
+      Write-Host "Oops, this is not a valid number. Please retry!" -ForegroundColor Red
+    }
+  }
+}
 
+################################################################################################
+#### Order Listings ####
+function order-sets {
+
+
+}
 ################################################################################################
 #### Main Body ###
 
 ##Clear space for progress bar
 "`r `n `r `n `r `n `r `n `r `n `r `n `n `n `n `n `n"
 
+#Count today's number of ready for vendor
+$listings = Get-ChildItem -Directory $ready_path -Filter "Home*"
+if ($listings.count -gt 6){
+  $vendor_teams["Team 8 (Blink India)"] = 6
+  if (($listings.count-$vendor_sets[0]) -gt 7){
+    $vendor_teams["Team 6 (Differential)"] = 7
+    $vendor_teams["Team 1 (Oodio)"] = $listings.count-($vendor_sets[0]+$vendor_sets[1])
+  } Else {
+    $vendor_teams["Team 6 (Differential)"] = $listings.count-$vendor_sets[0]
+    $vendor_teams["Team 1 (Oodio)"] = 0
+  }
+} Else {
+  $vendor_teams["Team 8 (Blink India)"] = $listings.count
+}
+
 ## Vendor Shipment distribution
-pick_vendors
+assign_vendors
 
 ##View username
 Write-Host "Username: $($username)"
@@ -347,7 +394,6 @@ Download-CSV
 
 ##Clear Error Log before start
 $Error.clear()
-
 
 ##Stage 1: Reading CSV -> Update Progress
 $error_count = show-progress $progress $error_count
@@ -363,7 +409,6 @@ $progress += 1
 $error_count = show-progress $progress $error_count
 
 ##Copy selects from ready for vendor to local machine
-$listings = Get-ChildItem -Directory $ready_path -Filter "Home*"
 $listings_list = listings-copy
 
 ##Stage 3: Comparing CS Export to Ready for Vendor -> Update Progress
@@ -378,13 +423,27 @@ Foreach ($id in $listings_list) {
     }
 }
 
+##Count and list all Sets to be shipped
+$delivery_count = Get-ChildItem -Directory "$($select_path)\*" -Filter "Home*"| Measure-Object | %{$_.Count}
+$folders = Get-ChildItem -Directory $select_path -filter "Home*"
+
+ForEach ($folder in $folders) {
+    $assets_count = Get-ChildItem -File "$($select_path)\$($folder)\SELECTS\*" | Measure-Object | %{$_.Count}
+    $id = extract-id $folder
+    $delivered_list += $id
+    $listing_count.Add($id, $assets_count)
+  }
+
+$ordered_listings = $listing_count.GetEnumerator() | Sort-Object -Property Value
+
+##Stage 4: Copy assigned sets to Vendors
+
+
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-##Count and list all Sets to be delivered
-$delivery_count = Get-ChildItem -Directory "$($upload_path)\*" -Exclude "Missing Covers"| Measure-Object | %{$_.Count}
-$folders = Get-ChildItem -Directory $upload_path
+
 
 ##Stage 4: Check Missing Covers -> Update Progress
 $progress += 1
