@@ -12,42 +12,34 @@
 ###############################################################################
 
 #####################################################
-################## Client Delivery ##################
+################## Vendor Shippment #################
 #####################################################
 
 #Silence Error to display on screen
-#$ErrorActionPreference= 'silentlycontinue'
+$ErrorActionPreference= 'silentlycontinue'
 
 # ## Reading variables from config file
  $current_loc = Get-Location
-# $content = Get-Content -Path "$($current_loc)\config.txt"
-# ForEach ($line in $content){
-#    $var = $line.Split(';')
-#    if (-Not (Test-Path "Variable:\$($var[0])")){
-#      New-Variable -Name $var[0] -Value $var[1] -Scope Global
-#    } Else {
-#      Set-Variable -Name $var[0] -Value $var[1] -Scope Global
-#    }
-# }
+ $content = Get-Content -Path "$($current_loc)\config.txt"
+ ForEach ($line in $content){
+   $var = $line.Split(';')
+   if (-Not (Test-Path "Variable:\$($var[0])")){
+     New-Variable -Name $var[0] -Value $var[1] -Scope Global
+   } Else {
+     Set-Variable -Name $var[0] -Value $var[1] -Scope Global
+   }
+}
 
 ##Directories path parameters
-$csv_loc = "C:\Users\Blink Workstation\Downloads"
 $current_date = Get-Date -UFormat "%Y%m%d"
-$csv_ready_file = "photo_sets_export_$($current_date).csv"
-$csv_ready_path = "$($csv_loc)\$($csv_ready_file)"
-$ready_path = "W:\Airbnb\Plus - Sequencing\Vendor test"
-$select_path = "C:\Users\Blink Workstation\Desktop\Selects"
-$archive_path = "Y:\Client\Airbnb\Plus\Delivered Test"
+$csv_file = "photo_sets_export_$($current_date).csv"
+$csv_path = "$($csv_loc)\$($csv_file)"
 
-
-#link
-$ready_link = "https://cs.blink.la/photosets/26/63/export.csv?view_type=&media_type=&market=&vendor_id=NA&general_status=&status=&status%5B%5D=110000&client_approval=&vendor_status=&reshoot_reason=&qc_assigned_to=&editorial_assigned_to=&crop_cover_assigned_to=&feedback_assigned_to=&technical_assigned_to=&sent_to_client_from=&sent_to_client_to=&feedback_date_from=&feedback_date_to=&sequencing_completed_from=&sequencing_completed_to=&received_from_client_from=&received_from_client_to=&received_from_vendor_from=&received_from_vendor_to=&sent_to_vendor_from=&sent_to_vendor_to=&feedback_completed_r1_from=&feedback_completed_r1_to=&feedback_completed_r2_from=&feedback_completed_r2_to=&require_review_by_client_from=&require_review_by_client_to=&qc_qm_date_complete_from=&qc_qm_date_complete_to=&created_from=&created_to=&modified_from=&modified_to=&range_field=&range_value=&sort=&direction="
-
-$cs_upload = "https://cs.blink.la/photosets/update/26/63"
+$massupdater_file = "VendorUpdate_$($current_date).csv"
+$massupdater = "$($massupdater)\$($massupdater_file)"
 
 ##Where to put the log files
-$del_log = "$($csv_loc)\delivery_log.txt"
-$massupdater = "$($csv_loc)\vendor_update.csv"
+$del_log = "$($log_dir)\vendor_shippment_log.txt"
 ##############################
 
 #initate a list for photosets
@@ -55,11 +47,11 @@ $SetID = @()
 $listings = @()
 $listings_list = @()
 $tracker_err_list = @()
-$delivered_list = @()
 $update_list = @()
+$old_csv = @()
 $listing_count = @{}
-$team_paths = @{"Team 8 (Blink India)"="V:\Blink - India\00 - From HQ\";"Team 6 (Differential)" = "V:\Differential Imaging\To Differential";"Team 1 (Oodio)" = "V:\Oodio\To Oodio"}
-$vendor_teams = [ordered]@{"Team 8 (Blink India)"=0;"Team 6 (Differential)" = 0;"Team 1 (Oodio)" = 0}
+$team_paths = @{"Team 8"="V:\Blink - India\00 - From HQ\";"Team 6" = "V:\Differential Imaging\To Differential";"Team 1" = "V:\Oodio\To Oodio"}
+$vendor_teams = [ordered]@{"Team 8"=0;"Team 6" = 0;"Team 1" = 0}
 $team_names = @{"Team 8"="Blink India"; "Team 6"="Differential";"Team 1"="Oodio"}
 $vendor_assignments = @{}
 $ordered_listings = [ordered]@{}
@@ -138,9 +130,14 @@ function copy-progress {
 ################################################################################################
 #### Copy and rename listings from Ready for Vendor to Selects  ####
 function listings-copy {
+    ## Empty folder to avoid overlapping
+    Remove-Item -Path "$($select_path)\*" -Force | Out-Null
+    ##
+
+    $return_list = @()
     Foreach ($listing in $listings) {
         $listing_id = extract-id $listing
-        $listings_list += $listing_id
+        $return_list += $listing_id
         $source = "$($ready_path)\$($listing)\SELECT*\*"
         $dest = "$($select_path)\$($listing)\SELECTS\"
         if (-Not (Test-Path $dest -PathType Container)) {
@@ -152,7 +149,7 @@ function listings-copy {
         } -ArgumentList $source, $dest | Out-Null
         copy-progress $source $dest "copy"
     }
-    return $listings_list
+    return $return_list
 }
 
 ################################################################################################
@@ -170,7 +167,7 @@ function log-delivery {
     Add-Content -path $del_log -Value $output
     ForEach ($id in $update_list) {
       $key = orig_id $id
-      $output = '{0,-15} : {1,5} : {2}' -f $id, $listing_count[$key], $list_teams[$key]
+      $output = '{0,-15} : {1,5} : {2} ({3})' -f $id, $listing_count[$key], $list_teams[$key], $team_names[$list_teams[$key]]
       Add-Content -path $del_log -Value $output
     }
     Add-Content -path $del_log -Value "_________________________________"
@@ -181,7 +178,7 @@ function log-delivery {
     $output = '{0,-10} : {1,5} : {2}' -f "Set ID", "Count", "Assigned Team"
     Add-Content -path $del_log -Value $output
     ForEach ($key in $tracker_err_list) {
-      $output = '{0,-10} : {1,5} : {2}' -f $key, $listing_count[$key], $list_teams[$key]
+      $output = '{0,-10} : {1,5} : {2} ({3})' -f $key, $listing_count[$key], $list_teams[$key], $team_names[$list_teams[$key]]
       Add-Content -path $del_log -Value $output
     }
     Add-Content -path $del_log -Value "_________________________________"
@@ -190,7 +187,17 @@ function log-delivery {
 
 ################################################################################################
 #### MassUpdater Output File ####
-function massupdater {
+function massupdater_fn {
+    ## Delete previous exports to avoid overlapping
+    if (Test-Path $massupdater -PathType Leaf) {
+      Remove-Item -Path $massupdater -Force | Out-Null
+    }
+    ##
+    if (-Not $update_list) {
+        $header = [PSCustomObject] @{external_id = " "; Vendor = " "; status = " "}
+        $header | Export-Csv -Path $massupdater -NoTypeInformation
+        return
+    }
     $key = orig_id $update_list[0]
     $header = [PSCustomObject] @{external_id = $update_list[0]; Vendor = $list_teams[$key]; status = 'Sent to vendor'}
     $header | Export-Csv -Path $massupdater -NoTypeInformation
@@ -208,12 +215,15 @@ function massupdater {
 function Download-CSV {
     $timeout = 20
     Write-Host "Downloading Ready for Vendor CSV File"
+    ## Delete previous exports to avoid overlapping
+    Remove-Item -Path "$($csv_loc)\photo_sets_export_*" -Force
+    ##
     Start-Process($ready_link) -WindowStyle Hidden
-    $download_status = Test-Path $csv_ready_path -PathType Leaf
+    $download_status = Test-Path $csv_path -PathType Leaf
     $timer = [Diagnostics.Stopwatch]::StartNew()
     $time_flag = ($timer.Elapsed.TotalSeconds -lt $timeout)
     While ((-Not $download_status) -and ($time_flag)) {
-        $download_status = Test-Path $csv_ready_path -PathType Leaf
+        $download_status = Test-Path $csv_path -PathType Leaf
         $time_flag = ($timer.Elapsed.TotalSeconds -lt $timeout)
         }
     $timer.Stop()
@@ -259,7 +269,7 @@ function assign_vendors {
   Write-Host "Usually, the distribution looks like that:"
   "`r"
   ForEach ($team in $vendor_teams.Keys){
-      $output = '{0,-22} > {1,5}' -f $team, $vendor_teams[$team]
+      $output = '{0,-7} ({1,-12}) > {2,5}' -f $team, $team_names[$team], $vendor_teams[$team]
       Write-Host "$($output) sets"
   }
   "`r"
@@ -271,18 +281,35 @@ function assign_vendors {
       $flag = 0
       "`r"
       Write-Host "Ok, sure." -ForegroundColor Yellow
-      ForEach ($team in $($vendor_teams.Keys)) {$vendor_teams[$team] = 0}
+      $in_flag = 8
+      Do {
+        ForEach ($team in $($vendor_teams.Keys)) {$vendor_teams[$team] = 0}
+        "`r"
+        ForEach ($team in $($vendor_teams.Keys)){
+            $sum = 0
+            ForEach ($key in $($vendor_teams.keys)) {$sum += $vendor_teams[$key]}
+            $left_sets = $listings.count-$sum
+            change_vendor $team $left_sets
+        }
+        $sum = 0
+        ForEach ($key in $($vendor_teams.keys)) {$sum += $vendor_teams[$key]}
+        $left_sets = $listings.count-$sum
+        if ($left_sets -ne 0) {
+           Write-Host "Oops, your total assignmnets is not matching to the total number of sets. Please retry!" -ForegroundColor Red
+        }
+      } While ($left_sets -ne 0)
+      Write-Host "Now, the distribution looks like that:"
       "`r"
-      ForEach ($team in $($vendor_teams.keys)){
-          $sum = 0
-          ForEach ($key in $($vendor_teams.keys)) {$sum += $vendor_teams[$key]}
-          $left_sets = $listings.count-$sum
-          change_vendor $team $left_sets
+      ForEach ($team in $vendor_teams.Keys){
+        $output = '{0,-7} ({1,-12}) > {2,5}' -f $team, $team_names[$team], $vendor_teams[$team]
+        Write-Host "$($output) sets"
       }
+      "`r"
     } ElseIf (($in -eq "N") -or ($in -eq "n")){
       $flag = 0
       "`r"
       Write-Host "Ok, Roger that!" -ForegroundColor Yellow
+      "`r"
     } Else {
       "`r"
       Write-Host "Error: Please type in Y or N" -ForegroundColor Red
@@ -298,7 +325,7 @@ function change_vendor {
   $flag = 8
   While ($flag -eq 8){
     Write-Host "How many would you like to assign to " -ForegroundColor Green -NoNewline
-    $in = Read-Host "$($vendor)"
+    $in = Read-Host "$($vendor) ($($team_names[$vendor]))"
     $value = [int]$in
     if (($in -match '\d+')) {
         if (($value -le $left) -and ($value -ge 0) ) {
@@ -340,22 +367,22 @@ function assign_assets {
 function copy_assets {
   Foreach ($team in $vendor_assignments.Keys) {
     $new_folder = Get-Date -UFormat "%m-%d-%Y"
-    $dest = "$($team_paths[$team])\(Test)$($new_folder)"
+    $dest = "$($team_paths[$team])\$($new_folder)"
     if (-Not (Test-Path $dest -PathType Container)) {
                 New-Item -ItemType directory -Path $dest | Out-Null
             }
     ForEach ($listing in $vendor_assignments[$team]){
       $target = Get-ChildItem -Directory $select_path -Filter "*($($listing))"
-      $source = "$($select_path)\$($target)\*"
-      $full_dest = "$($dest)\$($target)\"
+      $source = "$($select_path)\$($target)"
+      $full_dest = "$($dest)\"
       if (-Not (Test-Path $full_dest -PathType Container)) {
           New-Item -ItemType directory -Path $full_dest | Out-Null
       }
       Start-Job -Name "Vendor Shipping Copying" -ScriptBlock {
           param($source, $full_dest)
-          Copy-Item $source $full_dest -Recurse -Force
+          Move-Item -Path $source -Destination $full_dest -Force
       } -ArgumentList $source, $full_dest | Out-Null
-      copy-progress $source $full_dest "copy"
+      copy-progress $source $full_dest "move"
     }
   }
 }
@@ -366,7 +393,7 @@ function copy_assets {
 function listings-archive {
     Foreach ($listing in $listings){
         $source = "$($ready_path)\$($listing)"
-        $dest = "$($archive_path)\$($archive_name)\"
+        $dest = "$($vendor_archive_path)\$($archive_name)\"
         Start-Job -Name "Moving Items" -ScriptBlock {
             param($source, $dest)
             Move-Item -Path $source -Destination $dest -Force
@@ -384,16 +411,16 @@ function listings-archive {
 #Count today's number of ready for vendor
 $listings = Get-ChildItem -Directory $ready_path -Filter "Home*"
 if ($listings.count -gt 6){
-  $vendor_teams["Team 8 (Blink India)"] = 6
+  $vendor_teams["Team 8"] = 6
   if (($listings.count-$vendor_sets[0]) -gt 7){
-    $vendor_teams["Team 6 (Differential)"] = 7
-    $vendor_teams["Team 1 (Oodio)"] = $listings.count-($vendor_sets[0]+$vendor_sets[1])
+    $vendor_teams["Team 6"] = 7
+    $vendor_teams["Team 1"] = $listings.count-($vendor_sets[0]+$vendor_sets[1])
   } Else {
-    $vendor_teams["Team 6 (Differential)"] = $listings.count-$vendor_sets[0]
-    $vendor_teams["Team 1 (Oodio)"] = 0
+    $vendor_teams["Team 6"] = $listings.count-$vendor_sets[0]
+    $vendor_teams["Team 1"] = 0
   }
 } Else {
-  $vendor_teams["Team 8 (Blink India)"] = $listings.count
+  $vendor_teams["Team 8"] = $listings.count
 }
 
 ## Vendor Shipment distribution
@@ -412,7 +439,7 @@ $Error.clear()
 $error_count = show-progress $progress $error_count
 
 ##Read Set Ids from the CSV file
-Import-Csv $csv_ready_path |`
+Import-Csv $csv_path |`
     ForEach-Object {
         $SetID += $_."Photo set ID"
     }
@@ -442,7 +469,6 @@ $folders = Get-ChildItem -Directory $select_path -filter "Home*"
 ForEach ($folder in $folders) {
     $assets_count = Get-ChildItem -File "$($select_path)\$($folder)\SELECTS\*" | Measure-Object | %{$_.Count}
     $id = extract-id $folder
-    $delivered_list += $id
     $listing_count.Add($id, $assets_count)
   }
 
@@ -461,7 +487,7 @@ $progress += 1
 $error_count = show-progress $progress $error_count
 
 ##Create the update list to contain "- RAW" or "- JPEG"
-Foreach ($id in $delivered_list) {
+Foreach ($id in $listings_list) {
     if($SetID -like "$id*") {
         $update_item = $SetID -like "$id*"
         $update_list += $update_item
@@ -470,7 +496,7 @@ Foreach ($id in $delivered_list) {
 
 ##Write log files
 log-delivery
-massupdater
+massupdater_fn
 
 ##Stage 6: Update CS -> Update Progress
 $progress += 1
@@ -487,38 +513,19 @@ $error_count = show-progress $progress $error_count
 
 ##Create Archive Folder
 $archive_name = Get-Date -UFormat "%m-%d-%Y"
-if (-Not (Test-Path "$($archive_path)\$($archive_name)" -PathType Container)) {
-            New-Item -ItemType directory -Path "$($archive_path)\$($archive_name)" | Out-Null
+if (-Not (Test-Path "$($vendor_archive_path)\$($archive_name)" -PathType Container)) {
+            New-Item -ItemType directory -Path "$($vendor_archive_path)\$($archive_name)" | Out-Null
         }
 
 ##Archive sets
 listings-archive
 
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##Stage 7: End Process -> Update Progress
+##Stage 8: End Process -> Update Progress
 $progress += 1
 $error_count = show-progress $progress $error_count
 
 ##Pop-up window to confirm process complete
 $wshell = New-Object -ComObject Wscript.Shell
-$wshell.Popup("ABB Client Deivery Completed",0,"Done",0x1)
+$wshell.Popup("Airbnb Vendor Shippment Completed",0,"Done",0x1)
 
-########################################### Client Delivery Script###########################################
+########################################### Vendor Shipping Script End ###########################################

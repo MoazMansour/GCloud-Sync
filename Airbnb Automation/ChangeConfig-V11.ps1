@@ -1,5 +1,5 @@
 ###############################################################################
-# NAME:      ChangeConfig-V10.ps1
+# NAME:      ChangeConfig-V11.ps1
 # AUTHOR:    Moaz Mansour, Blink
 # E-MAIL:    moaz.mansour@blink.la
 # DATE:      01/10/2019
@@ -9,6 +9,7 @@
 #
 # VERSION HISTORY:
 # 1.0    01/10/2019    Initial Version
+# 1.1    01/29/2019    Includes Vendor Shipping Variables 
 ###############################################################################
 
 #####################################################

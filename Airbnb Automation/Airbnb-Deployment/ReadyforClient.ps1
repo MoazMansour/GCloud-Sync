@@ -42,12 +42,12 @@ $csv_file = "photo_sets_export_$($csv_date).csv"
 $csv_path = "$($csv_loc)\$($csv_file)"
 
 $missing_covers = "$($upload_path)\Missing Covers"
-$massupdater_file = "MassUpdater_$($csv_date).csv"
+$massupdater_file = "ClientUpdate_$($csv_date).csv"
 $massupdater = "$($massupdater)\$($massupdater_file)"
 
 ##Where to put the log files
-$error_log = "$($log_dir)\error_log.txt"    #defining the error log path
-$del_log = "$($log_dir)\delivery_log.txt"      #defining the error log path
+$error_log = "$($log_dir)\client_error_log.txt"    #defining the error log path
+$del_log = "$($log_dir)\client_delivery_log.txt"      #defining the error log path
 $Index_txt = "$($upload_path)\File Count List.txt"
 $total_count = "total.txt"
 
@@ -159,7 +159,7 @@ function listings-archive {
         $id = extract-id $listing
         if ($delivered_list -like $id) {
             $source = "$($client_path)\$($listing)"
-            $dest = "$($archive_path)\$($archive_name)\"
+            $dest = "$($client_archive_path)\$($archive_name)\"
             Start-Job -Name "Moving Items" -ScriptBlock {
                 param($source, $dest)
                 Move-Item -Path $source -Destination $dest -Force
@@ -228,7 +228,17 @@ function log-delivery {
 ################################################################################################
 
 #### MassUpdater Output File ####
-function massupdater {
+function massupdater_fn {
+    ## Delete previous exports to avoid overlapping
+    if (Test-Path $massupdater -PathType Leaf) {
+      Remove-Item -Path $massupdater -Force | Out-Null
+    }
+    ##
+    if (-Not $update_list) {
+      $header = [PSCustomObject] @{external_id = " "; status = " "}
+      $header | Export-Csv -Path $massupdater -NoTypeInformation
+      return
+    }
     $header = [PSCustomObject] @{external_id = $update_list[0]; status = 'Sent to client'}
     $header | Export-Csv -Path $massupdater -NoTypeInformation
     $i = 1
@@ -245,6 +255,9 @@ function massupdater {
 function Download-CSV {
     $timeout = 20
     Write-Host "Downloading CSV File"
+    ## Delete previous exports to avoid overlapping
+    Remove-Item -Path "$($csv_loc)\photo_sets_export_*" -Force
+    ##
     Start-Process($export_link) -WindowStyle Hidden
     $download_status = Test-Path $csv_path -PathType Leaf
     $timer = [Diagnostics.Stopwatch]::StartNew()
@@ -392,7 +405,7 @@ Foreach ($id in $delivered_list) {
 log-delivery
 log-error
 log-count
-massupdater
+massupdater_fn
 
 ##Stage 6: Update CS -> Update Progress
 $progress += 1
@@ -409,8 +422,8 @@ $error_count = show-progress $progress $error_count
 
 ##Create Archive Folder
 $archive_name = Get-Date -UFormat "%m-%d-%Y"
-if (-Not (Test-Path "$($archive_path)\$($archive_name)" -PathType Container)) {
-            New-Item -ItemType directory -Path "$($archive_path)\$($archive_name)" | Out-Null
+if (-Not (Test-Path "$($client_archive_path)\$($archive_name)" -PathType Container)) {
+            New-Item -ItemType directory -Path "$($client_archive_path)\$($archive_name)" | Out-Null
         }
 
 ##Archive sets

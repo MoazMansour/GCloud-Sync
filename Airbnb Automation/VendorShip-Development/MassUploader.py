@@ -49,6 +49,6 @@ CSV_input = driver.find_element_by_xpath('//input[@type="file"]')               
 CSV_input.send_keys(massupdater_path)                                                           # sending the massupdater path
 update_button = driver.find_element_by_id('importInformation')                                  # Find the button to update information
 #update_button.click()                                                                           # Click the update button
-#driver.quit()                                                                                  # Comment this for testing
+driver.quit()                                                                                  # Comment this for testing
 
 ########################################### Massupdater Upload Script###########################################
