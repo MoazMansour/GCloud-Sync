@@ -27,13 +27,13 @@
 #! /bin/bash
 
 EVENTS="CREATE,MOVED_TO,MOVED_FROM"                 # specifying kind of events to be monitored
-bucket="gs://rsync-trigger-test/"              			# Bucket path
-g_root="GSync/" 												            # root folder subject to change on the cloud
+bucket="gs://dam-staging/"              			# Bucket path
+g_root="Ingest/" 												            # root folder subject to change on the cloud
 l_root="/rsync-test/"											          # root folder subject to change on the local server
 g_trash="Trash/"                                    # Trash path on the cloud bucket
 l_trash="$l_root@Recycle/"                          # Trash path on the local server
 proc=0                                              # counter to control number of running procceses
-max_proc=7                                          # set max number of allowed proccesses at once
+max_proc=5                                          # set max number of allowed proccesses at once
 g_add_log="/home/blink/programs/logs/cloud_add"     # Path to cloud adding log
 l_add_log="/home/blink/programs/logs/NAS_add"       # Path to NAS adding log
 g_del_log="/home/blink/programs/logs/cloud_del"  		# Path to cloud deleting log
@@ -161,6 +161,7 @@ function callback() {
 while read -r line
 do
   [[ $line == *"@Recycle"* ]] && continue                                            # Skip synchronizing @Recycle folder
+  [[ $line == *"@Recently-Snapshot"* ]] && continue                                  # Skip synchronizing @Recently-Snapshot folder
   [[ $line == *".gstmp"* ]] && continue                                              # Skip synchronizing @Recycle folder
   path=${line%/*}                                                                    # Parsing the path variable from the change message
   path="$path/"

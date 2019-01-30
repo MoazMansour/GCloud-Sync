@@ -34,13 +34,13 @@ import os
 
 ####### Information to be changed based on the type of service and bucket used ####
 project_id = "production-backup-194719"                                                         # The project I am assigned to on Gcloud
-subscription_name = "mySub"		                 		                                        # Pull subscription channel created to pull all object changes messages
-bucket = "gs://rsync-trigger-test/"                                                             # Bucket path
-g_root = "GSync/"		                                	                                    # root folder subject to change on the cloud
+subscription_name = "StagingSub"		                 		                                        # Pull subscription channel created to pull all object changes messages
+bucket = "gs://dam-staging/"                                                             # Bucket path
+g_root = "Ingest/"		                                	                                    # root folder subject to change on the cloud
 l_root = "/rsync-test/"		                                  	                                # root folder subject to change on the local server
 g_trash= "Trash/"                                                                               # Trash path on the cloud bucket
 l_trash= l_root+"@Recycle/" 	                                                                # Trash path on the local server
-max_proc = 10                  	                                                                # setting maximum number of messages to be processed
+max_proc = 5                  	                                                                # setting maximum number of messages to be processed
 g_add_log = "/home/blink/programs/logs/cloud_add"  												# Path to cloud addition log
 l_add_log = "/home/blink/programs/logs/NAS_add" 												# Path to NAS addition log
 g_del_log = "/home/blink/programs/logs/cloud_del"  												# Path to cloud deleting log
