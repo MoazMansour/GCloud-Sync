@@ -9,7 +9,7 @@
 #
 # VERSION HISTORY:
 # 1.0    01/10/2019    Initial Version
-# 1.1    01/29/2019    Includes Vendor Shipping Variables 
+# 1.1    01/29/2019    Includes Vendor Shipping Variables
 ###############################################################################
 
 #####################################################
@@ -18,10 +18,14 @@
 
 #Global Variables
 $current_loc = Get-Location
-$config_file = "$($current_loc)\config.txt"
+$config_file = "$($current_loc)\vendor_config.txt"
+$list_team_numbers = @()
+$list_team_names = @()
+$list_team_default = @()
+$list_team_paths = @()
 
 #Silence Error to display on screen
-$ErrorActionPreference= 'silentlycontinue'
+#$ErrorActionPreference= 'silentlycontinue'
 
 ################################################################################################
 #### Read Config File ####
@@ -50,6 +54,8 @@ function main-menu {
   Write-Host "Change Credentials"
   Write-Host "[2] : " -ForegroundColor Green -NoNewline
   Write-Host "Change Path Variables"
+  Write-Host "[3] : " -ForegroundColor Green -NoNewline
+  Write-Host "Change Vendor Data"
   Write-Host "[0] : " -ForegroundColor Green -NoNewline
   Write-Host "Exit"
   "`r"
@@ -64,13 +70,17 @@ function main-menu {
       $flag = 0
       "`r"
       change-path
+    } ElseIf ($in -eq 3){
+      $flag = 0
+      "`r"
+      change-vendor
     } ElseIf ($in -eq 0) {
       "`r"
       Write-Host "Good Bye!" -ForegroundColor Yellow
       Exit
     } Else {
       "`r"
-      Write-Host "Error: Please type in 1 or 2 only" -ForegroundColor Red
+      Write-Host "Error: Please type in a number between 0 to 3" -ForegroundColor Red
     }
   }
 }
@@ -139,8 +149,8 @@ function do_change($n) {
     $replacment = $replacment -replace "upload_path;$($reg_upload_path)","upload_path;$($new_upload_path)"
     Set-Content -Path $config_file -Value $replacment
   } ElseIf ($n -eq 4) {
-    Write-Host "Current Delivered Path: $($archive_path)"
-    $new_archive_path = Read-Host "New Delivered Path"
+    Write-Host "Current Delivered Archive Path: $($archive_path)"
+    $new_archive_path = Read-Host "New Delivered Archive Path"
     $reg_archive_path = [Regex]::Escape($archive_path)
     ## Saving to config file
     $replacment = $replacment -replace "archive_path;$($reg_archive_path)","archive_path;$($new_archive_path)"
@@ -160,8 +170,8 @@ function do_change($n) {
     $replacment = $replacment -replace "log_dir;$($reg_log_dir)","log_dir;$($new_log_dir)"
     Set-Content -Path $config_file -Value $replacment
   } ElseIf ($n -eq 7) {
-    Write-Host "Current CS CSV Export Link: $($export_link)"
-    $new_export_link = Read-Host "New CS CSV Export Link"
+    Write-Host "Current Client Delivery CSV Export Link: $($export_link)"
+    $new_export_link = Read-Host "New Client Delivery CSV Export Link"
     $reg_export_link = [Regex]::Escape($export_link)
     ## Saving to config file
     $replacment = $replacment -replace "export_link;$($reg_export_link)","export_link;$($new_export_link)"
@@ -173,6 +183,34 @@ function do_change($n) {
     ## Saving to config file
     $replacment = $replacment -replace "cs_upload;$($reg_cs_upload)","cs_upload;$($new_cs_upload)"
     Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 9) {
+    Write-Host "Current Ready for Vendor Path: $($ready_path)"
+    $new_ready_path = Read-Host "New Ready for Vendor Path"
+    $reg_ready_path = [Regex]::Escape($ready_path)
+    ## Saving to config file
+    $replacment = $replacment -replace "ready_path;$($reg_ready_path)","ready_path;$($new_ready_path)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 10) {
+    Write-Host "Current Local folder for Vendor Selects Path: $($select_path)"
+    $new_select_path = Read-Host "New Local folder for Vendor Selects Path"
+    $reg_select_path = [Regex]::Escape($select_path)
+    ## Saving to config file
+    $replacment = $replacment -replace "select_path;$($reg_select_path)","select_path;$($new_select_path)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 11) {
+    Write-Host "Current Sent to Vendor Archive Path: $($vendor_archive_path)"
+    $new_vendor_archive_path = Read-Host "New Sent to Vendor Archive Path"
+    $reg_vendor_archive_path = [Regex]::Escape($vendor_archive_path)
+    ## Saving to config file
+    $replacment = $replacment -replace "vendor_archive_path;$($reg_vendor_archive_path)","vendor_archive_path;$($new_vendor_archive_path)"
+    Set-Content -Path $config_file -Value $replacment
+  } ElseIf ($n -eq 12) {
+    Write-Host "Current Vendor Shippment CSV Export Link: $($ready_link)"
+    $new_ready_link = Read-Host "New Vendor Shippment CSV Export Link"
+    $reg_ready_link = [Regex]::Escape($ready_link)
+    ## Saving to config file
+    $replacment = $replacment -replace "ready_link;$($reg_ready_link)","ready_link;$($new_ready_link)"
+    Set-Content -Path $config_file -Value $replacment
   }
   "`r `n `r"
   Write-Host "Path Changes Updated Successfully" -ForegroundColor Green
@@ -181,40 +219,111 @@ function do_change($n) {
 }
 
 ################################################################################################
-#### Chane Paths Menu Options ####
+#### Change Paths Menu Options ####
 
 function change-path {
   Write-Host "################## Change Path Variables ####################"
   "`r"
   Write-Host "Please pick the type of change you would like to make:"
-  Write-Host "[1] : " -ForegroundColor Green -NoNewline
-  Write-Host "CSV Export Download Location"
-  Write-Host "[2] : " -ForegroundColor Green -NoNewline
-  Write-Host "Ready for Client"
-  Write-Host "[3] : " -ForegroundColor Green -NoNewline
+  Write-Host "[1]  : " -ForegroundColor Green -NoNewline
+  Write-Host "CSV Export Download Location (For both Vendor & Client)"
+  Write-Host "[2]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Ready for Client Path"
+  Write-Host "[3]  : " -ForegroundColor Green -NoNewline
   Write-Host "Upload Folder Path"
-  Write-Host "[4] : " -ForegroundColor Green -NoNewline
-  Write-Host "Delivered Folder Path"
-  Write-Host "[5] : " -ForegroundColor Green -NoNewline
-  Write-Host "Massupdater Destination"
-  Write-Host "[6] : " -ForegroundColor Green -NoNewline
-  Write-Host "Log Files Destination"
-  Write-Host "[7] : " -ForegroundColor Green -NoNewline
-  Write-Host "CS CSV Export Link"
-  Write-Host "[8] : " -ForegroundColor Green -NoNewline
-  Write-Host "Massupdater Upload Link"
+  Write-Host "[4]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Delivered Archive Folder Path"
+  Write-Host "[5]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Massupdater Destination (For both Vendor & Client)"
+  Write-Host "[6]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Log Files Destination (For both Vendor & Client)"
+  Write-Host "[7]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Client Delivery CSV Export Link"
+  Write-Host "[8]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Massupdater Upload Link (For both Vendor & Client)"
+  Write-Host "[9]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Ready for Vendor Path"
+  Write-Host "[10] : " -ForegroundColor Green -NoNewline
+  Write-Host "Local Folder for Vendor Selects Path"
+  Write-Host "[11] : " -ForegroundColor Green -NoNewline
+  Write-Host "Sent to Vendor Archive Path"
+  Write-Host "[12] : " -ForegroundColor Green -NoNewline
+  Write-Host "Vendor Shippment CSV Export Link"
   "`r"
   ##
   $flag = 8
   While ($flag -eq 8){
-    $in = Read-Host "Input your option"
-    if (($in -le 8) -and ($in -gt 0)){
+    $read = Read-Host "Input your option"
+    $in = [int]$read
+    if (($in -le 12) -and ($in -gt 0)){
       $flag = 0
       do_change $in
     }
     Else {
       "`r"
-      Write-Host "Error: Please type in an int between 1 to 8" -ForegroundColor Red
+      Write-Host "Error: Please type in an int between 1 to 12" -ForegroundColor Red
+    }
+  }
+}
+
+################################################################################################
+#### Change Vendor Menu Options ####
+function change-vendor {
+  Write-Host "################## Change Vendor Info ####################"
+  "`r"
+  Write-Host "Hi, here below is the list of vendors we have so far and their default assignments"
+  "`r"
+  $i = 0
+  While ($i -lt $list_team_numbers.count) {
+    $output = '{0,-7} ({1,-12}) > {2,5}' -f $list_team_numbers[$i], $list_team_names[$i], $list_team_default[$i]
+    Write-Host "$($output)"
+    $i += 1
+  }
+  "`r"
+  Write-Host "Please pick the type of change you would like to make:"
+  Write-Host "[1]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Add Vendor"
+  Write-Host "[2]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Remove Vendor"
+  Write-Host "[3]  : " -ForegroundColor Green -NoNewline
+  Write-Host "Update Vendor"
+  "`r"
+  ##
+  $flag = 8
+  While ($flag -eq 8){
+    $read = Read-Host "Input your option"
+    $in = [int]$read
+    if (($in -le 3) -and ($in -gt 0)){
+      $flag = 0
+      vendor_action $in
+    }
+    Else {
+      "`r"
+      Write-Host "Error: Please type in an int between 1 to 3" -ForegroundColor Red
+    }
+  }
+}
+
+################################################################################################
+#### Vendor Change into Action ####
+function vendor_action($n) {
+  "`r"
+  
+  if ($n -eq 1) {
+    Write-Host "You are about to ADD a new vendor:" -ForegroundColor Yellow
+    "`r"
+    $flag = 8
+    While ($flag -eq 8) {
+      $in = Read-Host "Team # "
+      if ($in -match '^[0-9]*$'){
+        $flag = 0
+        $element = "Team $($in)"
+        $list_team_numbers += $element
+        Write-Host $list_team_numbers
+      } Else {
+        "`r"
+        Write-Host "Oops, please just add the team number (eg. 8)" -ForegroundColor Red
+      }
     }
   }
 }
@@ -282,6 +391,10 @@ Write-Host "########################################################"
 
 ##call the main menu
 read_config
+Set-Variable -Name "list_team_names" -Value $team_names.Split(',') -Scope Global
+Set-Variable -Name "list_team_paths" -Value $team_paths.Split(',') -Scope Global
+Set-Variable -Name "list_team_numbers" -Value $team_numbers.Split(',') -Scope Global
+Set-Variable -Name "list_team_default" -Value $team_default.Split(',') -Scope Global
 main-menu
 
 "`r `n `r"
