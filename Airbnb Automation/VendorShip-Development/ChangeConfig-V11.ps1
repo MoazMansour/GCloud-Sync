@@ -18,14 +18,15 @@
 
 #Global Variables
 $current_loc = Get-Location
-$config_file = "$($current_loc)\vendor_config.txt"
+$config_file = "$($current_loc)\config.txt"
+$vendor_config = "$($current_loc)\vendor_config.txt"
 $list_team_numbers = @()
 $list_team_names = @()
 $list_team_default = @()
 $list_team_paths = @()
 
 #Silence Error to display on screen
-#$ErrorActionPreference= 'silentlycontinue'
+$ErrorActionPreference= 'silentlycontinue'
 
 ################################################################################################
 #### Read Config File ####
@@ -275,7 +276,7 @@ function change-vendor {
   "`r"
   $i = 0
   While ($i -lt $list_team_numbers.count) {
-    $output = '{0,-7} ({1,-12}) > {2,5}' -f $list_team_numbers[$i], $list_team_names[$i], $list_team_default[$i]
+    $output = '{0,-7} ({1,-12}) > {2,5} > {3}' -f $list_team_numbers[$i], $list_team_names[$i], $list_team_default[$i], $list_team_paths[$i]
     Write-Host "$($output)"
     $i += 1
   }
@@ -305,10 +306,154 @@ function change-vendor {
 }
 
 ################################################################################################
+#### Remove Vendor Menu ####
+function remove_vendor_menu($element) {
+  Write-Host "Are you sure you want to REMOVE the below vendor?" -ForegroundColor Yellow
+  $key = $Global:list_team_numbers.indexof($element)
+  $output = '{0,-7} ({1,-12}) > {2,5} > {3}' -f $list_team_numbers[$key], $list_team_names[$key], $list_team_default[$key], $list_team_paths[$key]
+  "`r"
+  Write-Host "$($output)"
+  "`r"
+  $flag = 8
+  While ($flag -eq 8){
+    $in = Read-Host "Confirm [Y/N]?"
+    if (($in -eq "Y") -or ($in -eq "y")){
+      $flag = 0
+      $Global:list_team_numbers = [System.Collections.ArrayList]$Global:list_team_numbers
+      $Global:list_team_names = [System.Collections.ArrayList]$Global:list_team_names
+      $Global:list_team_paths = [System.Collections.ArrayList]$Global:list_team_paths
+      $Global:list_team_default = [System.Collections.ArrayList]$Global:list_team_default
+
+      $Global:list_team_numbers.RemoveAt($key)
+      $Global:list_team_names.RemoveAt($key)
+      $Global:list_team_paths.RemoveAt($key)
+      $Global:list_team_default.RemoveAt($key)
+    } ElseIf (($in -eq "N") -or ($in -eq "n")){
+      $flag = 0
+    } Else {
+      "`r"
+      Write-Host "Oops, This only takes a Y or N" -ForegroundColor Red
+    }
+  }
+}
+
+################################################################################################
+#### Update Vendor Menu ####
+function update_vendor_menu($element) {
+  "`r"
+  Write-Host "What would you like to change for the below vendor?" -ForegroundColor Yellow
+  $key = $Global:list_team_numbers.indexof($element)
+  $output = '{0,-7} ({1,-12}) > {2,5} > {3}' -f $list_team_numbers[$key], $list_team_names[$key], $list_team_default[$key], $list_team_paths[$key]
+  "`r"
+  Write-Host "$($output)"
+  "`r"
+  Write-Host "[1] : " -ForegroundColor Green -NoNewline
+  Write-Host "Change Team Number"
+  Write-Host "[2] : " -ForegroundColor Green -NoNewline
+  Write-Host "Change Team Name"
+  Write-Host "[3] : " -ForegroundColor Green -NoNewline
+  Write-Host "Change Team Default Assignment"
+  Write-Host "[4] : " -ForegroundColor Green -NoNewline
+  Write-Host "Change Team Path"
+  "`r"
+  $flag = 8
+  While ($flag -eq 8){
+    $in = Read-Host "Input your option"
+    if ($in -eq 1){
+      $flag = 0
+      "`r"
+      Write-Host "Ok, sure." -ForegroundColor Yellow
+      $q = 8
+      While ($q -eq 8) {
+        $in = Read-Host "New Team # "
+        if ($in -match '^[0-9]*$'){
+          $element = "Team $($in)"
+          if ($Global:list_team_numbers -like $element) {
+             Write-Host "Oops, this team already exists. Please enter a diff number" -ForegroundColor Red
+          } Else {
+              $Global:list_team_numbers[$key] = $element
+              $q = 0
+          }
+        } Else {
+          "`r"
+          Write-Host "Oops, please just add the team number (eg. 8)" -ForegroundColor Red
+        }
+      }
+    } ElseIf ($in -eq 2){
+      $flag = 0
+      "`r"
+      Write-Host "Ok, sure." -ForegroundColor Yellow
+      $q = 8
+      While ($q -eq 8) {
+          $in = Read-Host "New Team Name "
+          if ($Global:list_team_names -like $in){
+              Write-Host "Oops, this team already exists. Please enter a diff name" -ForegroundColor Red
+          } Else {
+              $Global:list_team_names[$key] = $in
+              $q = 0
+          }
+      }
+    } ElseIf ($in -eq 3){
+      $flag = 0
+      "`r"
+      Write-Host "Ok, sure." -ForegroundColor Yellow
+      $q = 8
+      While ($q -eq 8) {
+        $in = Read-Host "New Default Assignment "
+        if ($in -match '^[0-9]*$'){
+          $q = 0
+          $element = [int]$in
+          $Global:list_team_default[$key] = $element
+        } Else {
+          "`r"
+          Write-Host "Oops, please input an integer (eg. 5)" -ForegroundColor Red
+        }
+      }
+    } ElseIf ($in -eq 4) {
+      $flag = 0
+      "`r"
+      Write-Host "Ok, sure." -ForegroundColor Yellow
+      $q = 8
+      While ($q -eq 8) {
+          $in = Read-Host "New Team Path "
+          if ($Global:list_team_paths -like $in){
+              Write-Host "Oops, this path already exists. Please enter a diff path" -ForegroundColor Red
+          } Else {
+              $Global:list_team_paths[$key] = $in
+              $q = 0
+          }
+        }
+    } Else {
+      "`r"
+      Write-Host "Error: Please type in a number between 1 and 4" -ForegroundColor Red
+    }
+  }
+}
+
+################################################################################################
+#### Update Vendor Changes ####
+function update_vendor {
+    $new_team_numbers = $Global:list_team_numbers -join ","
+    $new_team_names = $Global:list_team_names -join ","
+    $new_team_paths = $Global:list_team_paths -join ","
+    $new_team_default = $Global:list_team_default -join ","
+
+    $reg_team_numbers = [Regex]::Escape($team_numbers)
+    $reg_team_names = [Regex]::Escape($team_names)
+    $reg_team_paths = [Regex]::Escape($team_paths)
+    $reg_team_default = [Regex]::Escape($team_default)
+
+    $Global:replacment = $Global:replacment -replace "team_numbers;$($reg_team_numbers)","team_numbers;$($new_team_numbers)"
+    $Global:replacment = $Global:replacment -replace "team_names;$($reg_team_names)","team_names;$($new_team_names)"
+    $Global:replacment = $Global:replacment -replace "team_paths;$($reg_team_paths)","team_paths;$($new_team_paths)"
+    $Global:replacment = $Global:replacment -replace "team_default;$($reg_team_default)","team_default;$($new_team_default)"
+    Set-Content -Path $config_file -Value $Global:replacment
+}
+
+################################################################################################
 #### Vendor Change into Action ####
 function vendor_action($n) {
   "`r"
-  
   if ($n -eq 1) {
     Write-Host "You are about to ADD a new vendor:" -ForegroundColor Yellow
     "`r"
@@ -316,72 +461,96 @@ function vendor_action($n) {
     While ($flag -eq 8) {
       $in = Read-Host "Team # "
       if ($in -match '^[0-9]*$'){
-        $flag = 0
         $element = "Team $($in)"
-        $list_team_numbers += $element
-        Write-Host $list_team_numbers
+        if ($Global:list_team_numbers -like $element) {
+           Write-Host "Oops, this team already exists. Please enter a diff number" -ForegroundColor Red
+        } Else {
+            $Global:list_team_numbers += $element
+            $flag = 0
+        }
+      } Else {
+        "`r"
+        Write-Host "Oops, please just add the team number (eg. 8)" -ForegroundColor Red
+      }
+    }
+    $flag = 8
+    While ($flag -eq 8) {
+        $in = Read-Host "Team Name "
+        if ($Global:list_team_names -like $in){
+            Write-Host "Oops, this team already exists. Please enter a diff name" -ForegroundColor Red
+        } Else {
+            $Global:list_team_names += $in
+            $flag = 0
+        }
+    }
+    $flag = 8
+    While ($flag -eq 8) {
+      $in = Read-Host "Default Assignment "
+      if ($in -match '^[0-9]*$'){
+        $flag = 0
+        $element = [int]$in
+        $Global:list_team_default += $element
+      } Else {
+        "`r"
+        Write-Host "Oops, please input an integer (eg. 5)" -ForegroundColor Red
+      }
+    }
+    $flag = 8
+    While ($flag -eq 8) {
+        $in = Read-Host "Team Path "
+        if ($Global:list_team_paths -like $in){
+            Write-Host "Oops, this path already exists. Please enter a diff path" -ForegroundColor Red
+        } Else {
+            $Global:list_team_paths += $in
+            $flag = 0
+        }
+    }
+  } ElseIf ($n -eq 2) {
+    Write-Host "You are about to REMOVE a vendor:" -ForegroundColor Yellow
+    "`r"
+    $flag = 8
+    While ($flag -eq 8) {
+      $in = Read-Host "Team # "
+      if ($in -match '^[0-9]*$'){
+        $element = "Team $($in)"
+        if (-Not ($Global:list_team_numbers -like $element)) {
+          Write-Host "Oops, this team does not exist. Please enter a diff number" -ForegroundColor Red
+        } Else {
+          remove_vendor_menu $element
+          $flag = 0
+        }
+      } Else {
+        "`r"
+        Write-Host "Oops, please just add the team number (eg. 8)" -ForegroundColor Red
+      }
+    }
+  } ElseIf ($n -eq 3) {
+    Write-Host "You are about to UPDATE a vendor:" -ForegroundColor Yellow
+    $flag = 8
+    While ($flag -eq 8){
+      $in = Read-Host "Team # "
+      if ($in -match '^[0-9]*$'){
+        $element = "Team $($in)"
+        if (-Not ($Global:list_team_numbers -like $element)) {
+          Write-Host "Oops, this team does not exist. Please enter a diff number" -ForegroundColor Red
+        } Else {
+          update_vendor_menu $element
+          $flag  = 0
+        }
       } Else {
         "`r"
         Write-Host "Oops, please just add the team number (eg. 8)" -ForegroundColor Red
       }
     }
   }
+  update_vendor
+  "`r `n `r"
+  Write-Host "Vendor Changes Updated Successfully" -ForegroundColor Green
+  "`r"
+  extra_menu
 }
 
 ################################################################################################
-#### UI for Vendor Shipment Management ####
-# function pick_vendors {
-#   Write-Host "########################################################"
-#   Write-Host "################ Airbnb Vendor Shipping ################"
-#   Write-Host "########################################################"
-#   "`r `n `r `n `r"
-#
-#   Write-Host "Hi,"
-#   Write-Host "Welcome to the Airbnb Vendor Shipping tool designed by Blink Tech team"
-#   Write-Host "Today is $($current_date). we have 8 vendors so far how many would you deal with today?"
-#   #Which vendor teams we will be working with today?"
-#   Write-Host "Please type in all your inputs comma separated (eg. 1,4,5)"
-#   Write-Host "[1] : " -ForegroundColor Green -NoNewline
-#   Write-Host "Team 1 > Oodio"
-#   Write-Host "[2] : " -ForegroundColor Green -NoNewline
-#   Write-Host "Team 2 > "
-#   Write-Host "[3] : " -ForegroundColor Green -NoNewline
-#   Write-Host "Team 3 > "
-#   Write-Host "[4] : " -ForegroundColor Green -NoNewline
-#   Write-Host "Team 4 > "
-#   Write-Host "[5] : " -ForegroundColor Green -NoNewline
-#   Write-Host "Team 5 > "
-#   Write-Host "[6] : " -ForegroundColor Green -NoNewline
-#   Write-Host "Team 6 > Differential"
-#   Write-Host "[7] : " -ForegroundColor Green -NoNewline
-#   Write-Host "Team 7 > "
-#   Write-Host "[8] : " -ForegroundColor Green -NoNewline
-#   Write-Host "Team 8 > Blink India"
-#   "`r"
-#   $flag = 8
-#   While ($flag -eq 8){
-#     $in = Read-Host "Input your choice"
-#     if ($in -match ""){
-#       $flag = 0
-#       "`r"
-#       change-credentials
-#     } ElseIf ($in -eq 2){
-#       $flag = 0
-#       "`r"
-#       change-path
-#     } ElseIf ($in -eq 0) {
-#       "`r"
-#       Write-Host "Good Bye!" -ForegroundColor Yellow
-#       Exit
-#     } Else {
-#       "`r"
-#       Write-Host "Error: Please type in 1 or 2 only" -ForegroundColor Red
-#     }
-#
-# }
-
-################################################################################################
-
 ##Clear space for progress bar
 "`r `n `r `n `r"
 Write-Host "########################################################"

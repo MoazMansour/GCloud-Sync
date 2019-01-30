@@ -1,4 +1,0 @@
-team_numbers;Team 8,Team 6,Team 1
-team_paths;V:\Blink - India\00 - From HQ\,V:\Differential Imaging\To Differential,V:\Oodio\To Oodio
-team_default;6,7,45
-team_names;Blink India,Differential,Oodio
