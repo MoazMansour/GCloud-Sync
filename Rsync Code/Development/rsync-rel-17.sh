@@ -26,7 +26,7 @@
 
 #! /bin/bash
 
-EVENTS="CREATE,MOVED_TO,MOVED_FROM"                 # specifying kind of events to be monitored
+EVENTS="CLOSE_WRITE,MOVED_TO,MOVED_FROM"                 # specifying kind of events to be monitored
 bucket="gs://dam-staging/"              			# Bucket path
 g_root="Ingest/" 												            # root folder subject to change on the cloud
 l_root="/rsync-test/"											          # root folder subject to change on the local server
@@ -59,7 +59,7 @@ function run_sync {
 
 # If the object changed was a directory then copy a dummy file into the bucket to create the folder
   if [[ $event == *"ISDIR"* ]]; then                                                                               # Check directory change
-    if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                                            # Check creating types of changes
+    if [[ $event == *"CLOSE_WRITE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                                            # Check creating types of changes
       proc_control&                                                                                                # Call the process control function
       echo -e "$(cat $l_add_log)$folder$file/.initiate| " > $l_add_log                                              # Write the change to the NAS log
       echo -e "$(cat $g_add_log)$folder$file/.initiate| " > $g_add_log                                              # Write the change to the cloud log to avoide overwriting
@@ -92,7 +92,7 @@ function run_sync {
     fi
   else
     #If change was not a directory change the below are the checks run per file change
-    if [[ $event == "CREATE" ]] || [[ $event == "MOVED_TO" ]]; then                                               # Check creation types of changes
+    if [[ $event == *"CLOSE_WRITE"* ]] || [[ $event == "MOVED_TO" ]]; then                                               # Check creation types of changes
       proc_control&                                                                                               # Call the process control function
       echo -e "$(cat $l_add_log)$folder$file| " > $l_add_log                                                      # Write the change to the local add log
       gsutil -m cp "$path$file" "$bucket$g_root$folder$file"                                                     # Copies the file to the cloud
@@ -128,7 +128,7 @@ function callback() {
 
   #####
   # Check if it was a local or remote change to run sync
-  if [[ $event == *"CREATE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                                              # Check if it was a create to get owner
+  if [[ $event == *"CLOSE_WRITE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                                              # Check if it was a create to get owner
     log_check="$g_add_log"                                                                                         # Set the log check file as the add log
     read log_file< <(grep -w "$log_check" -e "$folder$file|")                                                      # Check if the action was performed by the cloud
     if echo "$log_file" | grep -q "$folder$file|"; then                                                            # Checks if the change was logged from the cloud side
@@ -162,7 +162,9 @@ while read -r line
 do
   [[ $line == *"@Recycle"* ]] && continue                                            # Skip synchronizing @Recycle folder
   [[ $line == *"@Recently-Snapshot"* ]] && continue                                  # Skip synchronizing @Recently-Snapshot folder
-  [[ $line == *".gstmp"* ]] && continue                                              # Skip synchronizing @Recycle folder
+  [[ $line == *".gstmp"* ]] && continue                                              # Skip synchronizing .gstmp files
+  [[ $line == *".lrprev"* ]] && continue                                             # Skip synchronizing .lrprev files
+  [[ $line == *".stream"* ]] && continue                                             # Skip synchronizing .stream folder
   path=${line%/*}                                                                    # Parsing the path variable from the change message
   path="$path/"
   rest=${line##*/}                                                                   # reading the rest of the message except the path

@@ -39,7 +39,6 @@ l_add_log="/home/blink/programs/logs/NAS_add"       # Path to NAS adding log
 g_del_log="/home/blink/programs/logs/cloud_del"  		# Path to cloud deleting log
 l_del_log="/home/blink/programs/logs/NAS_del"  			# Path to NAS deleting log
 
-
 #############################################
 #Queue function
 function proc_control {
@@ -92,7 +91,7 @@ function run_sync {
     fi
   else
     #If change was not a directory change the below are the checks run per file change
-    if [[ $event == "CLOSE_WRITE" ]] || [[ $event == "MOVED_TO" ]]; then                                               # Check creation types of changes
+    if [[ $event == *"CLOSE_WRITE"* ]] || [[ $event == "MOVED_TO" ]]; then                                               # Check creation types of changes
       proc_control&                                                                                               # Call the process control function
       echo -e "$(cat $l_add_log)$folder$file| " > $l_add_log                                                      # Write the change to the local add log
       gsutil -m cp "$path$file" "$bucket$g_root$folder$file"                                                     # Copies the file to the cloud
@@ -161,8 +160,10 @@ function callback() {
 while read -r line
 do
   [[ $line == *"@Recycle"* ]] && continue                                            # Skip synchronizing @Recycle folder
-  [[ $line == *".gstmp"* ]] && continue                                              # Skip synchronizing @Recycle folder
   [[ $line == *"@Recently-Snapshot"* ]] && continue                                  # Skip synchronizing @Recently-Snapshot folder
+  [[ $line == *".gstmp"* ]] && continue                                              # Skip synchronizing .gstmp files
+  [[ $line == *".lrprev"* ]] && continue                                             # Skip synchronizing .lrprev files
+  [[ $line == *".stream"* ]] && continue                                             # Skip synchronizing .stream folder
   path=${line%/*}                                                                    # Parsing the path variable from the change message
   path="$path/"
   rest=${line##*/}                                                                   # reading the rest of the message except the path
