@@ -45,10 +45,19 @@ g_add_log = "/home/blink/programs/logs/cloud_add"  												# Path to cloud a
 l_add_log = "/home/blink/programs/logs/NAS_add" 												# Path to NAS addition log
 g_del_log = "/home/blink/programs/logs/cloud_del"  												# Path to cloud deleting log
 l_del_log = "/home/blink/programs/logs/NAS_del" 												# Path to NAS deleting log
-gsync_log = "/home/blink/programs/logs/gsync-log.txt"
+# gsync_log = "/home/blink/programs/logs/gsync-log.txt"
 
 subscriber = pubsub_v1.SubscriberClient()
 subscription_path = subscriber.subscription_path(project_id, subscription_name)
+
+###############################################
+#Change log file
+def gsync_log_fn():
+	current_date = time.strftime("%m-%d-%Y")
+	gsync_log = "/home/blink/programs/logs/gsync/gsync-log("+current_date+")"
+	if not (os.path.isfile(gsync_log)):
+		call(["touch",gsync_log])
+	return gsync_log
 
 ###############################################
 #Check owner function
@@ -61,8 +70,9 @@ def check_owner(change_type,change_item):
 	change_check = f.read()
 	f.close()
 	if (change_check.find(change_item+"|") != -1):                              						# Check if the changed object was logged by NAS
-		output = open(gsync_log,"a")
-		output.write("[info] "+change_type+" of "+change_item+" was perfromed by NAS, No sync required\n")
+		output = open(gsync_log_fn,"a")
+		timestamp = time.strftime("%m-%d-%Y %H:%M:%S")
+		output.write("[info] "+timestamp+" "+change_type+" of "+change_item+" was perfromed by NAS, No sync required\n")
 		change_check = change_check.replace(change_item+"|"," ")                                		# Removes the record from the log file
 		f = open(log_check,"w")
 		f.write(change_check)
@@ -89,16 +99,19 @@ def log_change(change_type,change_item):
 def create_dir(new_dir):
 	log_change("CREATE",new_dir)                        	                                       			# Log the folder change to the cloud add log
 	call(["mkdir","-p",l_root+new_dir])                     	                                   			# assures that the target directory (full path) exists on NAS
-	output = open(gsync_log,"a")
-	output.write("[info] Created "+l_root+new_dir+"\n")				                                            # Log changes
+	output = open(gsync_log_fn,"a")
+	timestamp = time.strftime("%m-%d-%Y %H:%M:%S")
+	output.write("[info] " + timestamp + " Created "+l_root+new_dir+"\n")				                                            # Log changes
 	log_change("CREATE",new_dir+"/.initiate") 	      	                                                    # Log the initiate file change to the cloud add log
 	log_change("LOCAL",new_dir+"/.initiate")    	                                                        # Log the initiate file change to the cloud add log
 	call(["cp","-P","dummy",l_root+new_dir+"/.initiate"])      	                                			# copies the initiate file to the newly created directory
 	call(["gsutil","-m","cp","-P","dummy",bucket+g_root+new_dir+"/.initiate"])                  			# copies the initiate file to the newly created directory
-	output = open(gsync_log,"a")
-	output.write("[info] Created "+l_root+new_dir+"/initiate\n")				                                    # Log changes
-	output = open(gsync_log,"a")
-	output.write("[info] Created "+bucket+g_root+new_dir+"/initiate\n")				                                # Log changes
+	output = open(gsync_log_fn,"a")
+	timestamp = time.strftime("%m-%d-%Y %H:%M:%S")
+	output.write("[info] "+ timestamp + " Created "+l_root+new_dir+"/initiate\n")				                                    # Log changes
+	output = open(gsync_log_fn,"a")
+	timestamp = time.strftime("%m-%d-%Y %H:%M:%S")
+	output.write("[info] " + timestamp + " Created "+bucket+g_root+new_dir+"/initiate\n")				                                # Log changes
 
 ###############################################
 #Main synchronization function
@@ -110,24 +123,15 @@ def run_sync(path,dir,event,file):
 			if not (os.path.isdir(l_root+dir)):                                                         # Check if the full target directory exists
 				create_dir(dir)                                                                         # call the create directory function
 			call(["gsutil","-m","cp",bucket+g_root+path+file,l_root+path+file])                         # copies the changed/created file to its destination on NAS
-			output = open(gsync_log,"a")
-			output.write("[info] Created "+l_root+path+file+"\n")			     	                            # Log changes
-		# elif event == "OBJECT_DELETE":                                                                	# checks if file has been deleted or renamed
-		# 	log_change("MOVE",path+file)
-		# 	call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
-		# 	call(["mv",l_root+path+file,l_trash+path+file])                                             # removes file from NAS
-		# 	output = open(gsync_log,"a")
-		# 	output.write("[info] Moved "+l_root+path+file+"\n")			     	                            # Log changes
+			output = open(gsync_log_fn,"a")
+			timestamp = time.strftime("%m-%d-%Y %H:%M:%S")
+			output.write("[info] " + timestamp + " Created "+l_root+path+file+"\n")			     	                            # Log changes
+
 ###
-	else:
-		if event == "OBJECT_FINALIZE":                                                                	# checks if folder has been created                                                                                       		# if the file is empty it means it was a folder action (usually a new empty folder has been created or deleted)
-			create_dir(dir)	                                                                            # call the create directory function
-		# elif event == "OBJECT_DELETE":                                                                	# checks if folder has been deleted
-		# 	log_change("MOVE",dir)
-		# 	call(["mkdir","-p",l_trash+dir])                                                            # assures that the target directory (full path) exists on NAS
-		# 	call(["mv",l_root+dir,l_trash+dir])  				                           	            # removes file from NAS
-		# 	output = open(gsync_log,"a")
-		# 	output.write("[info] Moved "+l_root+dir+"\n")			     	                            # Log changes
+	# else:
+	# 	if event == "OBJECT_FINALIZE":                                                                	# checks if folder has been created                                                                                       		# if the file is empty it means it was a folder action (usually a new empty folder has been created or deleted)
+	# 		create_dir(dir)	                                                                            # call the create directory function
+
 #### End of object changes actions
 ################################################
 
@@ -149,7 +153,7 @@ def callback(message):
 	if event == "OBJECT_DELETE":
 		event = "OBJECT_MOVED"
 
-	output = open(gsync_log,"a")
+	output = open(gsync_log_fn,"a")
 	output.write("[ CHANGE ] "+time+" "+event+" "+object+"\n")
 
 	if event != "OBJECT_FINALIZE":                                                                      	# If it is not creation then abort
@@ -172,11 +176,6 @@ def callback(message):
 		flag = check_owner("CREATE",path+file)                                                              # Call the check owner function
 		if (flag):                          					   											# If it wasn't logged from NAS then sync
 			run_sync(path,dir,event,file)
-	# elif event == "OBJECT_DELETE":                                                                      	# Checks if it was a deletion change
-	# 	logging.basicConfig()                                                                              	# Log handler for the google pull function
-	# 	flag = check_owner("MOVE",path+file)                                                             	# Call the check owner function
-	# 	if (flag):                                                                                          # If it wasn't logged on NAS then sync
-	# 		run_sync(path,dir,event,file)
 
 ### End of function
 ####################################################
