@@ -41,6 +41,22 @@ l_del_log="/home/blink/programs/logs/NAS_del"  			# Path to NAS deleting log
 
 
 #############################################
+##Change log file
+function rsync_log_fn {
+  message="$1"
+  current_date= date "+%m-%d-%Y"
+  rsync_log="/home/blink/programs/logs/rsync/rsync-log($current_date)"
+  if [ -f "$rsync_log" ]
+  then
+    echo -e "$(cat $rsync_log)$message " > $rsync_log                                              # Write the change to the NAS log
+  else
+    touch "$rsync_log"
+    echo -e "$(cat $rsync_log)$message " > $rsync_log                                              # Write the change to the NAS log
+  fi
+}
+
+
+#############################################
 #Queue function
 function proc_control {
   proc=$(( proc+1 ))
@@ -65,15 +81,28 @@ function run_sync {
       echo -e "$(cat $g_add_log)$folder$file/.initiate| " > $g_add_log                                              # Write the change to the cloud log to avoide overwriting
       gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initiate"                                                  # Creates a dummy file to create a folder on the cloud
       cp -P dummy "$l_root$folder$file/.initiate"                                                                   # Copy the initiate file to the local server
-      printf "[info] Created $bucket$g_root$folder$file/.initiate\n" | tee ./logs/rsync-log.txt                     # Log the copy process
-      printf "[info] Created $l_root$folder$file/.initiate\n" | tee ./logs/rsync-log.txt                            # Log the copy process
+      ##Log info
+      timestamp= date "+%m-%d-%Y %T"
+      message="[info] $timestamp Created $bucket$g_root$folder$file/.initiate\n"                                   # Log the copy process
+      rsync_log_fn $message
+      message="[info] $timestamp Created $l_root$folder$file/.initiate\n"                            # Log the copy process
+      rsync_log_fn $message
+      ##
       if [[ $event == *"MOVED_TO"* ]]; then
-        printf "[info] Building Sync for $l_root$folder$file and $bucket$g_root$folder$file\n" | tee ./logs/rsync-log.txt                     # Log the sync process
+        ##Log info
+        timestamp= date "+%m-%d-%Y %T"
+        message="[info] $timestamp Building Sync for $l_root$folder$file and $bucket$g_root$folder$file\n"                     # Log the sync process
+        rsync_log_fn $message
+        ##
         files="$l_root$folder$file/"*                                                                              # Read all files in the folder to be synced
         for f in $files                                                                                            # Loop on the files to avoid overwriting
         do
           new_f=${f##*"$l_root"}                                                                                   # Exclduing the root folder "rsync-test" from path for sync purposes
-          printf "[sync-info] Would Copy $f to $bucket$g_root$folder$file\n" | tee ./logs/rsync-log.txt                                       # Log the copy process
+          ## Log Info
+          timestamp= date "+%m-%d-%Y %T"
+          message="[sync-info] $timestamp Would Copy $f to $bucket$g_root$folder$file\n"                                       # Log the copy process
+          rsync_log_fn $message
+          ##
           echo -e "$(cat $l_add_log)$new_f| " > $l_add_log                                                         # Write the change to the NAS log
         done
         gsutil -m rsync -r "$l_root$folder$file" "$bucket$g_root$folder$file"                                     # In case it was a moved to (Rename) this sync the whole folder
@@ -85,7 +114,11 @@ function run_sync {
         proc_control&
         echo -e "$(cat $l_del_log)$folder$file| " > $l_del_log                                                     # Write the delete chane to the NAS log
         gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"                             # Move folder to the trash on the cloud
-        printf "[info] Moved $bucket$g_root$folder$file\n" |  tee ./logs/rsync-log.txt                  # Log changes
+        ## Log info
+        timestamp= date "+%m-%d-%Y %T"
+        message="[info] $timestamp Moved $bucket$g_root$folder$file\n"                  # Log changes
+        rsync_log_fn $message
+        #
         proc=$(( proc-1 ))                                                                                         # Once done decrement the proccesses run for the process control
         trap "kill 0" EXIT                                                                                         # Kill the running process (Function)
       fi
@@ -96,7 +129,11 @@ function run_sync {
       proc_control&                                                                                               # Call the process control function
       echo -e "$(cat $l_add_log)$folder$file| " > $l_add_log                                                      # Write the change to the local add log
       gsutil -m cp "$path$file" "$bucket$g_root$folder$file"                                                     # Copies the file to the cloud
-      printf "[info] Created $bucket$g_root$folder$file\n" | tee ./logs/rsync-log.txt                                                     # Log the copy process
+      ##Log Info
+      timestamp= date "+%m-%d-%Y %T"
+      message="[info] $timestamp Created $bucket$g_root$folder$file\n"                                                     # Log the copy process
+      rsync_log_fn $message
+      ##
       proc=$(( proc-1 ))                                                                                          # Once done decrement the proccesses run for the process control
       trap "kill 0" EXIT                                                                                          # Kill the running process (Function)
     else
@@ -104,7 +141,11 @@ function run_sync {
         proc_control&                                                                                             # Call the proccess control function
         echo -e "$(cat $l_del_log)$folder$file| " > $l_del_log                                                    # Write the change to the local delete log
         gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"                            # Move this file to the cloud trash
-        printf "[info] Moved $bucket$g_root$folder$file\n" |  tee ./logs/rsync-log.txt                  # Log changes
+        ##Log Info
+        timestamp= date "+%m-%d-%Y %T"
+        message="[info] $timestamp Moved $bucket$g_root$folder$file\n"                                            # Log changes
+        rsync_log_fn $message
+        ##
         proc=$(( proc-1 ))                                                                                        # Once done decrement the proccesses run for the process control
         trap "kill 0" EXIT
       fi                                                                                        # Kill the running process (Function
@@ -132,7 +173,11 @@ function callback() {
     log_check="$g_add_log"                                                                                         # Set the log check file as the add log
     read log_file< <(grep -w "$log_check" -e "$folder$file|")                                                      # Check if the action was performed by the cloud
     if echo "$log_file" | grep -q "$folder$file|"; then                                                            # Checks if the change was logged from the cloud side
-      printf "[info] $folder$file created by GCloud No sync needed\n" | tee ./logs/rsync-log.txt                                             # Log changes
+      ##Log Info
+      timestamp= date "+%m-%d-%Y %T"
+      message="[warning] $timestamp $folder$file created by GCloud No sync needed\n"                                             # Log changes
+      rsync_log_fn $message
+      ##
       python replace.py "$log_check" "$folder$file|"                                                               # Removes the file path from the cloud Add log
     else                                                                                                           # If it wasn't a gcloud change then sync
       proc_control&                                                                                                # Call the process control function
@@ -143,7 +188,11 @@ function callback() {
       log_check="$g_del_log"                                                                                       # Set the log check file as the delete log
       read log_file< <(grep -w "$log_check" -e "$folder$file|")                                                    # Check if the action was performed by the cloud
       if echo "$log_file" | grep -q "$folder$file|"; then                                                          # Checks if the change was logged from the cloud side
-        printf "[info] $folder$file moved by GCloud No sync needed\n" |  tee ./logs/rsync-log.txt                  # Log changes
+        ##Log Info
+        timestamp= date "+%m-%d-%Y %T"
+        message="[warning] $timestamp $folder$file moved by GCloud No sync needed\n"                  # Log changes
+        rsync_log_fn $message
+        ##
         python replace.py "$log_check" "$folder$file|"                                                             # Removes the file path from the cloud deletion log
       else                                                                                                         # If the change wasn't done by the cloud then sync
         proc_control&                                                                                              # Call the process control function

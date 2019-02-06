@@ -72,7 +72,7 @@ def check_owner(change_type,change_item):
 	if (change_check.find(change_item+"|") != -1):                              						# Check if the changed object was logged by NAS
 		output = open(gsync_log_fn,"a")
 		timestamp = time.strftime("%m-%d-%Y %H:%M:%S")
-		output.write("[info] "+timestamp+" "+change_type+" of "+change_item+" was perfromed by NAS, No sync required\n")
+		output.write("[warning] "+timestamp+" "+change_type+" of "+change_item+" was perfromed by NAS, No sync required\n")
 		change_check = change_check.replace(change_item+"|"," ")                                		# Removes the record from the log file
 		f = open(log_check,"w")
 		f.write(change_check)
