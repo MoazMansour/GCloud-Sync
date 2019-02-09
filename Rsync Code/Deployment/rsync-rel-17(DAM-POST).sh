@@ -48,10 +48,10 @@ function rsync_log_fn {
   rsync_log="/home/blink/programs/logs/rsync/rsync-log($current_date)"
   if [ -f "$rsync_log" ]
   then
-    echo -e "$(cat $rsync_log)$message " > $rsync_log                                              # Write the change to the NAS log
+    echo "$message " >> $rsync_log                                              # Write the change to the NAS log
   else
     touch "$rsync_log"
-    echo -e "$(cat $rsync_log)$message " > $rsync_log                                              # Write the change to the NAS log
+    echo "$message " >> $rsync_log                                              # Write the change to the NAS log
   fi
 }
 
@@ -77,8 +77,8 @@ function run_sync {
   if [[ $event == *"ISDIR"* ]]; then                                                                               # Check directory change
     if [[ $event == *"CLOSE_WRITE"* ]] || [[ $event == *"MOVED_TO"* ]]; then                                            # Check creating types of changes
       proc_control&                                                                                                # Call the process control function
-      echo -e "$(cat $l_add_log)$folder$file/.initiate| " > $l_add_log                                              # Write the change to the NAS log
-      echo -e "$(cat $g_add_log)$folder$file/.initiate| " > $g_add_log                                              # Write the change to the cloud log to avoide overwriting
+      echo "$folder$file/.initiate| " >> $l_add_log                                              # Write the change to the NAS log
+      echo "$folder$file/.initiate| " >> $g_add_log                                              # Write the change to the cloud log to avoide overwriting
       gsutil -m cp -P dummy "$bucket$g_root$folder$file/.initiate"                                                  # Creates a dummy file to create a folder on the cloud
       cp -P dummy "$l_root$folder$file/.initiate"                                                                   # Copy the initiate file to the local server
       ##Log info
@@ -103,7 +103,7 @@ function run_sync {
           message="[sync-info] $timestamp Would Copy $f to $bucket$g_root$folder$file\n"                                       # Log the copy process
           rsync_log_fn "$message"
           ##
-          echo -e "$(cat $l_add_log)$new_f| " > $l_add_log                                                         # Write the change to the NAS log
+          echo "$new_f| " >> $l_add_log                                                         # Write the change to the NAS log
         done
         gsutil -m rsync -r "$l_root$folder$file" "$bucket$g_root$folder$file"                                     # In case it was a moved to (Rename) this sync the whole folder
       fi
@@ -112,7 +112,7 @@ function run_sync {
     else
       if [[ $event == *"MOVED_FROM"* ]]; then                                        # Check moving types of changes
         proc_control&
-        echo -e "$(cat $l_del_log)$folder$file| " > $l_del_log                                                     # Write the delete chane to the NAS log
+        echo  "$folder$file| " >> $l_del_log                                                     # Write the delete chane to the NAS log
         gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"                             # Move folder to the trash on the cloud
         ## Log info
         timestamp=$(date "+%m-%d-%Y %T")
@@ -127,7 +127,7 @@ function run_sync {
     #If change was not a directory change the below are the checks run per file change
     if [[ $event == *"CLOSE_WRITE"* ]] || [[ $event == "MOVED_TO" ]]; then                                               # Check creation types of changes
       proc_control&                                                                                               # Call the process control function
-      echo -e "$(cat $l_add_log)$folder$file| " > $l_add_log                                                      # Write the change to the local add log
+      echo "$folder$file| " >> $l_add_log                                                      # Write the change to the local add log
       gsutil -m cp "$path$file" "$bucket$g_root$folder$file"                                                     # Copies the file to the cloud
       ##Log Info
       timestamp=$(date "+%m-%d-%Y %T")
@@ -139,7 +139,7 @@ function run_sync {
     else
       if [[ $event == "MOVED_FROM" ]]; then                                           # Check moving types of changes
         proc_control&                                                                                             # Call the proccess control function
-        echo -e "$(cat $l_del_log)$folder$file| " > $l_del_log                                                    # Write the change to the local delete log
+        echo "$folder$file| " >> $l_del_log                                                    # Write the change to the local delete log
         gsutil -m mv "$bucket$g_root$folder$file" "$bucket$g_trash$g_root$folder$file"                            # Move this file to the cloud trash
         ##Log Info
         timestamp=$(date "+%m-%d-%Y %T")
