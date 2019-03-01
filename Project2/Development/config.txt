@@ -1,0 +1,8 @@
+csv_loc;C:\Users\Downloads
+dam_path;U:\
+local_path;C:\Users\Desktop\Selects
+export_link;https://
+username;
+password;
+change_flag;TRUE
+master_path;Z:\Admin\Templates\Lightroom\Master Catalogs
