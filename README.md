@@ -1,0 +1,2 @@
+# GCloud-Sync
+This repository contains part of my work to automate and manage media content for postproduction workflow. It includes an instantaneous synchronization algorithm that connects a linux server to google cloud and keep it up to date with no refresh needed for every single change. it also includes a few other add-on automations using PowerShell and python that was used to enhance the efficiency of the internal work flow over the google cloud algorithm
